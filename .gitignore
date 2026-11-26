@@ -13,3 +13,6 @@ __pycache__/
 .venv/
 backend/logs/
 receipts/
+data/originals/
+data/contact.jpg
+data/videos/
