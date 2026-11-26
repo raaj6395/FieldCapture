@@ -1,0 +1,57 @@
+# SDK notes (observed, not from docs)
+
+Device: Samsung Galaxy S22 (SM-S901E), Android 16 / API 36. DAT 1.1.0, Meta CameraAccess sample, Mock Device Kit.
+
+## 2026-11-26 - first run of CameraAccess on the mock
+
+- Built with command-line tools only (no Android Studio): `./gradlew assembleDebug`, 4m11s cold on an 8 GB M1, APK 96 MB (many bundled native libs).
+- **Meta AI app is NOT needed for the mock.** Enabling MockDeviceKit skipped the "Connect my glasses" / Meta AI redirect and the app went straight to "Ready" (registered).
+- Mock setup order in the debug panel: Enable MockDeviceKit -> Pair Ray-Ban Meta -> Power, Donned, Unfolded toggles -> Camera source (Front / Back camera / Video file) -> Select image (for photo capture).
+- A newly paired mock is powered off, folded and not worn; session will not start until all three are on.
+- Back camera as feed: session `started`, stream `streaming` within ~5 s of tapping Preview. In-stream photo capture worked.
+- Logcat is flooded by the Samsung camera HAL (`CamX ... Invalid focalLengthRatio: 0`, ~30/s) while the phone camera feeds the mock. Filter logs by our own tag.
+
+## 2026-11-26 - Phase 0 probes (our app, `android/`, mock only)
+
+Probe app: buttons drive the mock + DAT calls, every state change logged with tag `FC`. All results are **mock-only, untested on hardware**.
+
+### Q1 - session lifecycle
+- `createSession` -> `start()`: IDLE -> STARTING -> STARTED in <50 ms.
+- Cap-touch tap: session PAUSED and stream PAUSED together. Tap again: session STARTED, stream STREAMING ~1.6 s later.
+- `stop()`: STOPPING -> STOPPED. A new `createSession` afterwards works (STARTED again, camera streams).
+- `AutoDeviceSelector()` throws `WearablesException` if built before `Wearables.initialize()` - create it lazily.
+- `session.errors` / `speech.errors` / `inputs.errors` emit `null` once on subscribe - ignore nulls.
+
+### Q2 - what fires on doff / fold / powerOff (during a streaming session)
+| Mock action | What we observed | Design impact |
+|---|---|---|
+| doff | Inputs -> INACTIVE. **Session and stream keep running, frames keep flowing.** | Don't treat doff as disconnect; pause capture prompts. |
+| don (after doff) | **Inputs do NOT come back** (stays INACTIVE; injected capture press not delivered). | Re-attach Inputs after don, or rely on voice only. |
+| fold | Session -> STOPPED straight away (SDK log: `STOP_ERROR_SESSION_UNAVAILABLE`). Speech/stream torn down. | Terminal: create a new session for the same job. |
+| powerOff | `activeDevice` -> null. **Session stays STARTED and stream stays STREAMING, but frames stop.** SDK logs only `HeartbeatMonitor: Heartbeat timeout (5000ms)`. Still "STARTED" 47 s later. After powerOn the dead session does not recover. | **Biggest gap.** Need our own watchdog: no frame for ~3 s or activeDevice == null -> stop session, recreate when device returns. |
+
+### Q3 - Speech in Developer Mode
+- `addSpeech()` + `start()` works with app id/token = "0": STARTING -> STARTED.
+- Injected text arrives as FINAL with the given confidence (`"capture damage kitchen ceiling" conf=0.9`).
+- Live phone-mic ASR (`MockSpeechSource.LIVE_DEVICE_ASR`, backed by Google's on-device recognizer): works, ~0.6 s from last partial to FINAL.
+  - "capture nameplate" -> `Capture nameplate`, 2 of 2 correct.
+  - "note: water heater leaking at base" -> `Note what are heated looking at base`. Command word fine, free text garbled.
+  - Partials report conf=1.0, **FINAL reports conf=0.0** every time -> ASR confidence is useless here; don't gate on it.
+  - Output is capitalised, no colon ("Note ..."), so the parser must be case-insensitive and treat "note" as a keyword without punctuation.
+  - Implication: commands (short, fixed words) are reliable; note text needs a read-back ("Saved note: ...") and back-office review flag. Phase 3 command eval should use real spoken audio, not just typed strings.
+- Decision: **DAT Speech** (works in dev mode; same code path for mock and glasses). Android SpeechRecognizer stays as the fallback if live ASR proves weak.
+
+### Q4 - Inputs in Developer Mode
+- `addInputs(InputsConfiguration(consumeBack = false))` -> ACTIVATING -> ACTIVE. Injected capture press arrives as `Capture(pressType=SHORT_PRESS, source=CAPTURE_BUTTON)`.
+- Caveat: goes INACTIVE on doff and stays INACTIVE after don (see Q2).
+
+### Q5 - capturePhoto
+- Requested `VideoQuality.HIGH` (720x1280) at 15 fps; the phone-camera mock delivered **480x640 YUV at ~30 fps** - the mock ignores both settings.
+- `capturePhoto()` returned `PhotoData.HEIC` in ~480 ms, but the bytes are a **640x480 JPEG** with EXIF `Rotate 90 CW` (26 KB). Same pixel count as the stream - no resolution gain from capturePhoto in the mock.
+- We must apply EXIF orientation before quality checks/OCR. Real-glasses resolution: unknown (question for Meta).
+
+### Q6 - Meta AI app needed for mock -> no (see above)
+
+### Other
+- Debug build of our app: 1m24s with a warm Gradle cache.
+- Samsung: a stray Back gesture finishes the activity; the process is then killed fast in the background. The real app needs a foreground service while a job is active.
