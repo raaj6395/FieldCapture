@@ -48,7 +48,7 @@ def contact_sheet(files, names):
     for i, f in enumerate(files):
         x, y = (i % cols) * tw, (i // cols) * (th + 18)
         sheet.paste(ImageOps.fit(ImageOps.exif_transpose(Image.open(f)), (tw - 4, th)), (x + 2, y + 18))
-        d.text((x + 3, y + 3), f"{i + 1} {names[i] if i < len(names) else '-- EXTRA --'}", fill="black")
+        d.text((x + 3, y + 3), f"{i + 1} {names[i] if i < len(names) else 'ref (close-up)'}", fill="black")
     sheet.save(DATA / "contact.jpg", quality=80)
 
 
@@ -67,8 +67,12 @@ def pull(since):
 def assign():
     files = sorted(INCOMING.glob("*.jp*g"))
     names = labels()
-    if len(files) != len(names):
-        sys.exit(f"{len(files)} photos vs {len(names)} label rows - delete extras in {INCOMING} or fix labels.csv first")
+    if len(files) < len(names):
+        sys.exit(f"{len(files)} photos vs {len(names)} label rows - fix labels.csv first")
+    ref = DATA / "originals" / "ref"
+    ref.mkdir(exist_ok=True)
+    for f in files[len(names):]:
+        shutil.copy2(f, ref / f.name)
     raw = DATA / "raw"
     raw.mkdir(exist_ok=True)
     for f, name in zip(files, names):
