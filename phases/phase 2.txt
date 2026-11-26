@@ -1,0 +1,203 @@
+PHASE 2 - SDK SESSION LIFECYCLE + RECOVERY
+==========================================
+Time: ~3 hours (Hour 4-7)
+
+
+1. OBJECTIVE
+------------
+Core requirement 1. The app runs a full session against the Mock
+Device Kit:
+  - start, pause, resume, stop,
+  - survives the device dropping off halfway through a walk and comes
+    back to the SAME job without losing any captures,
+  - survives the phone screen turning off (phone is in a pocket),
+  - reacts sensibly to device-side events (glasses removed, folded,
+    tapped to pause, low battery, overheating).
+Also: grab a still on demand (the voice commands in Phase 3 call it).
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+Verified from the mwdat-android skills (see phase 0.txt section 2):
+  - DeviceSession states: IDLE -> STARTING -> STARTED <-> PAUSED ->
+    STOPPING -> STOPPED. STOPPED is terminal.
+  - start/pause/resume/stop are fire-and-forget; the state only
+    changes when the device confirms. pause() outside STARTED and
+    resume() outside PAUSED are ignored.
+  - Device can pause the session itself (cap-touch tap) and resume it.
+  - SDK may pause/stop on: glasses removed/folded, BT drop, another
+    experience takes over, access revoked.
+  - Capabilities survive PAUSED -> STARTED. Add them only once.
+  - Stream has its own states (STOPPED, STARTING, STARTED, STREAMING,
+    PAUSED, STOPPING, CLOSED) and errors (STREAM_ERROR informational,
+    CRITICAL_STREAM_ERROR -> tear down).
+  - Device metadata: batteryLevel, donState, hingeState, thermalLevel
+    via Wearables.devicesMetadata[id]; device list via
+    Wearables.devices.
+  - Mock: powerOff/powerOn, doff/don, fold/unfold, setBatteryLevel,
+    setThermalLevel, captouch tap - in-app or via MockDevice MCP.
+
+Android:
+  - Runtime permissions: BLUETOOTH_CONNECT, CAMERA, RECORD_AUDIO,
+    POST_NOTIFICATIONS. DAT Permission.CAMERA / MICROPHONE go through
+    Wearables.RequestPermissionContract (mock grants by default).
+  - Foreground service (types: connectedDevice, camera, microphone).
+  - Coroutines + StateFlow.
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Two layers of state: the SDK's DeviceSession (dies on a drop,
+    terminal) and OUR job (must live through drops). They must not be
+    the same object.
+  - A drop may come as session STOPPED, as a stream CLOSED/critical
+    error, as the device vanishing from Wearables.devices, or as
+    silence (frames just stop). Handle all four.
+  - Android kills background apps; the job must survive app death
+    (restore from disk).
+  - Pause must be real (stop streaming saves glasses battery + heat)
+    but keep the job open.
+  - The mock cannot reproduce real battery drain, real heat, real
+    Bluetooth range/interference. Must be listed honestly.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+One class: JobSession. Owns one job and, at any moment, zero or one
+SDK DeviceSession. No interfaces.
+
+  Our job states:
+    IDLE          no job
+    CONNECTING    job created, SDK session starting
+    ACTIVE        SDK STARTED + stream STREAMING, captures allowed
+    PAUSED        job open, SDK session PAUSED (by us or the device)
+    RECONNECTING  device lost, job open, waiting for device to return
+    STOPPED       job closed, waiting for uploads to finish
+
+  Mapping SDK -> our state:
+    SDK STARTED + stream STREAMING        -> ACTIVE
+    SDK PAUSED (any cause)                -> PAUSED
+    SDK STOPPED while job open (not us)   -> RECONNECTING
+    stream CRITICAL_STREAM_ERROR / CLOSED -> RECONNECTING
+    device gone from Wearables.devices    -> RECONNECTING
+    no frame for 5 s while ACTIVE         -> RECONNECTING (watchdog)
+    donState = doffed                     -> PAUSED + say "Glasses off,
+                                             paused"
+
+  Reconnect:
+    - Release the dead DeviceSession (never reuse it).
+    - Wait until the device is back in Wearables.devices (and
+      powered/unfolded/donned), plus a backoff timer 1, 2, 4, 8, 15,
+      30 s for createSession failures. Never give up while the job is
+      open.
+    - Create a NEW DeviceSession, add camera (+ speech, inputs) once on
+      STARTED, start stream -> ACTIVE (or PAUSED if the job was paused
+      before the drop).
+    - Same job_id the whole time.
+    - Spoken cues: "Glasses disconnected" / "Glasses back".
+
+  Pause / resume (voice "pause" / "resume", or device cap-touch tap):
+    - Ours: session.pause() / session.resume(); wait for the observed
+      state, re-issue if it settles wrong.
+    - While PAUSED capture commands are refused with "Paused. Say
+      resume."
+
+  Device health (cheap wins for "SDK depth"):
+    - thermalLevel high -> drop stream to LOW quality / 7 fps, say
+      "Glasses hot, lowering video". Restore when it cools.
+    - batteryLevel < 15% -> say once "Glasses battery low".
+
+  Persistence:
+    - On every transition write session.json:
+      { job_id, state, was_paused, started_at, events[] }
+    - On app launch: open job found -> restore -> RECONNECTING.
+    - events[] (type, timestamp, cause) go into the final job record
+      so the back office sees "disconnected 10:42, back 10:43".
+
+  Capture on demand:
+    - captureStill(): camera.stream.capturePhoto() ->
+      PhotoData.Bitmap (save as JPEG) or PhotoData.HEIC (save bytes,
+      convert later). One at a time; queue a second request instead
+      of failing on CaptureInProgress.
+    - Also keep the last ~10 stream frames in a ring buffer (YUV) for
+      the burst/quality step in Phase 4.
+    - Refused with a spoken reason when not ACTIVE.
+
+
+5. STEPS
+--------
+Step 1 - Permissions (20 min)
+  - Android runtime permissions at first launch.
+  - DAT camera + microphone permission via RequestPermissionContract
+    (mock grants by default; test the denied path with
+    mockDeviceKit.permissions.setRequestResult(..., Denied)).
+
+Step 2 - JobSession state machine (40 min)
+  - States + mapping above; StateFlow<JobState>.
+  - One function onEvent(event) validates moves and appends to
+    events[]. Invalid moves ignored + logged, never crash.
+  - Pure Kotlin core so it is unit-testable without the SDK.
+
+Step 3 - Wire the SDK (45 min)
+  - createSession(AutoDeviceSelector()), collect state + errors
+    before start(), add capabilities once on STARTED.
+  - Collect stream.state + errorStream, Wearables.devices,
+    devicesMetadata.
+
+Step 4 - Reconnect + watchdog (30 min)
+  - Detect all four drop signals -> RECONNECTING.
+  - Wait for device, backoff, new session, same job.
+
+Step 5 - Foreground service + persistence (30 min)
+  - JobSession lives in a foreground service; notification shows
+    "Job 7F3A - ACTIVE".
+  - session.json write on every transition; restore on launch.
+
+Step 6 - captureStill + ring buffer (15 min)
+
+Step 7 - Mock drill script + notes (20 min)
+  - Use the MockDevice MCP (or the in-app debug panel) to run:
+    powerOff mid-walk, doff, fold, captouch tap, thermal high,
+    battery 10%. Log observed SDK states for each in SDK_NOTES.md
+    (this table is great memo material).
+  - Write "what the mock cannot simulate": real battery drain curve,
+    real heat build-up, BT range/interference, glasses camera optics
+    and exposure, real audio, wind/noise.
+
+Step 8 - Commit
+  - "phase 2: job session over DAT sessions, reconnect, device health"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  Unit tests (JVM, no device):
+  [ ] Every valid transition works, invalid ones ignored.
+  [ ] SDK STOPPED while ACTIVE -> RECONNECTING -> new session ->
+      ACTIVE, same job_id.
+  [ ] Drop while PAUSED -> comes back PAUSED.
+
+  Manual / MCP-driven on phone (results in SDK_NOTES.md):
+  [ ] start -> pause -> resume -> stop: events logged in order.
+  [ ] Mock powerOff mid-walk -> RECONNECTING within 5 s -> powerOn ->
+      same job_id -> ACTIVE.
+  [ ] Captouch tap pauses; tap again resumes; app follows.
+  [ ] 2 captures, powerOff, powerOn, 1 more -> all 3 under one job.
+  [ ] Thermal high -> stream drops to LOW; battery 10% -> warning.
+  [ ] Screen off 2 min -> session alive.
+  [ ] Force-stop app mid-job -> relaunch -> job restored.
+
+
+7. OUTPUT
+---------
+  - JobSession + foreground service + unit tests.
+  - SDK_NOTES.md: observed state table per mock event, mock limits.
+  - Commit.
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Treating the SDK session as the job (it dies on every drop).
+  - Calling addCamera twice on one session (CAPABILITY_ALREADY_ADDED)
+    or reusing a STOPPED session.
+  - Calling resume() before PAUSED is observed (ignored silently).
+  - A retry loop that gives up -> lost captures.

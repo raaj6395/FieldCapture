@@ -1,0 +1,176 @@
+PHASE 8 - STRETCH GOALS: COST & LATENCY (D) + SIZE WITHOUT DEPTH (A)
+===================================================================
+Time: ~2 hours (Hour 18-20). Do D first. Do A only if D is done.
+One stretch done properly beats two half done.
+
+
+=================================================================
+PART D - COST AND LATENCY
+=================================================================
+
+1. OBJECTIVE
+------------
+Measure, for a real walk-through:
+  - cost per job (USD),
+  - delay from capture to job record (per stage and end to end),
+then pick ONE of them and cut it in half, with before/after numbers.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - The chosen model's pricing: per input token, per output token,
+    how image size maps to input tokens.
+  - Where time goes in our pipeline:
+      capture -> quality check (phone) -> local save -> upload ->
+      extraction (model call) -> job finalize
+  - Median and p90 (90th percentile) - p90 is what an impatient tech
+    feels.
+  - Phone clock vs server clock: measure each stage on one side, or
+    send phone timestamps and accept small skew (note it).
+
+
+3. THE PROBLEM
+--------------
+  - Image tokens dominate cost. A full-resolution frame costs many
+    times a downscaled crop.
+  - Latency is mostly the model call + upload on a slow network.
+  - Offline captures have huge "delay" by design (waiting for signal).
+    Report online delay separately from queue wait.
+
+
+4. HOW WE BUILD IT
+------------------
+  - Timestamps already partly logged (Phase 5 calls.jsonl). Add:
+      phone: t_capture, t_quality_done, t_saved, t_upload_start,
+             t_upload_done  (sent with the capture metadata)
+      server: t_received, t_extract_start, t_extract_done,
+              t_finalized
+  - tools/cost_latency.py reads job records + calls.jsonl, prints:
+      cost per job, cost per capture type
+      per stage: median, p90 (ms)
+      end-to-end capture -> in job record (online only)
+
+  Halving candidates (pick the cheapest to build, measure it):
+    COST:
+      a) downscale long side 1024 -> 768 and JPEG q80 -> q70 for
+         damage photos (texture survives) - check accuracy holds.
+      b) crop nameplate to the text region found by the edge map from
+         Phase 4 before sending (fewer pixels, often BETTER OCR).
+      c) notes go to a cheaper text-only model.
+    LATENCY:
+      d) send the upload + extraction in parallel per capture instead
+         of one-by-one; finalize incrementally.
+      e) smaller image -> faster upload and faster model.
+  Recommended: (b) crop + (a) downscale. Likely halves cost and cuts
+  latency too. MUST re-run the nameplate eval to show accuracy did not
+  drop (or report the trade-off honestly).
+
+
+5. STEPS
+--------
+  1. Add the timestamps (20 min).
+  2. Do 1 real walk-through online (~8 captures). Run the script.
+     -> "before" table (10 min).
+  3. Implement the chosen halving change (25 min).
+  4. Re-run the same walk-through + nameplate eval subset (cached
+     where unchanged; count new calls first) -> "after" table (15 min).
+  5. Write the section in eval/REPORT.md. Commit.
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Table: cost per job, median + p90 latency per stage (before).
+  [ ] Same table after the change; target metric is <= 50% of before.
+  [ ] Nameplate accuracy before vs after the change (no silent
+      regression).
+  [ ] One paragraph: what we would do next to cut the other metric.
+
+
+=================================================================
+PART A - SIZE WITHOUT DEPTH
+=================================================================
+
+1. OBJECTIVE
+------------
+The glasses have no depth sensor. Estimate the size of a damaged area
+from a single image anyway, and report the error against a tape
+measure on our own damage frames.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Reference-object scaling: if an object of known size lies in the
+    same plane as the damage, pixels-per-cm = object pixel width /
+    object real width. Damage cm = damage pixels / pixels-per-cm.
+  - Known references in a house:
+      credit/ID card    8.56 x 5.40 cm
+      A4 sheet          29.7 x 21.0 cm
+      wall outlet plate (measure yours once, write it down)
+      floor/wall tile   (measure once)
+      door width        (measure once)
+  - Perspective error: if the camera is not square to the wall,
+    sizes are off; a 4-corner reference (card/A4) lets us correct
+    with a homography (OpenCV getPerspectiveTransform).
+  - Error metric: mean absolute percentage error (MAPE) of area.
+
+
+3. THE PROBLEM
+--------------
+  - Reference must be in the SAME plane as the damage, else scale is
+    wrong.
+  - Tech will not carry a card everywhere in real life -> also try
+    "fixed references" (outlets, tiles) and report both.
+  - Damage boundary is fuzzy (stains fade) -> even the tape-measure
+    truth has error (note it).
+
+
+4. HOW WE BUILD IT
+------------------
+  Simplest version that works:
+  - Ask the vision model (same call as damage extraction) to return
+    bounding boxes in pixels for: the damage area, and any reference
+    object it sees with its type.
+  - Python computes size from the boxes and the known reference size
+    table. If a 4-corner reference (card/A4) is found, correct
+    perspective first.
+  - No reference found -> fall back to the model's own cm estimate,
+    with low confidence (<= 0.4) and size_method = "model_guess".
+  - Output in damage fields:
+      size: { width_cm, height_cm, area_sqft, method:
+              "reference:card" | "reference:outlet" | "model_guess",
+              confidence }
+
+
+5. STEPS
+--------
+  1. Make sure 8+ damage frames have a reference object and a
+     tape-measured size (from Phase 1; shoot more if needed) (15 min).
+  2. Implement box -> cm conversion + reference table (30 min).
+  3. Run on the damage frames; compare: model_guess vs reference
+     method vs tape measure (15 min).
+  4. Report in eval/REPORT.md. Commit.
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Table per frame: true area, model-guess area, reference area,
+      % error each.
+  [ ] MAPE for model_guess vs reference method (expect reference to
+      be clearly better - if not, say why).
+  [ ] Worst case explained (angle, wrong plane, fuzzy edges...).
+  [ ] Unit test for the cm conversion maths (no API).
+
+
+7. OUTPUT (BOTH PARTS)
+----------------------
+  - tools/cost_latency.py, size estimation in backend/
+  - "Stretch" section in eval/REPORT.md with both tables
+  - Commit(s)
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Claiming a speedup without before/after on the same walk.
+  - Cost cut that silently drops accuracy.
+  - Reporting size accuracy only on frames that had a reference
+    (also report the no-reference fallback).

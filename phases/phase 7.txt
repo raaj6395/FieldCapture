@@ -1,0 +1,147 @@
+PHASE 7 - EVALUATION
+====================
+Time: ~2 hours (Hour 16-18)
+
+
+1. OBJECTIVE
+------------
+Core requirement 6, and 20 of the 100 points. Prove with real numbers
+how well extraction works:
+  - test set of 40+ of our own frames (10+ nameplates, 10+ low light),
+  - accuracy PER FIELD,
+  - five worst failures, each with its cause,
+  - evidence that confidence goes down when answers are wrong,
+  - evidence the quality gate helps.
+"A smaller app with real numbers beats a bigger one we can't verify."
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Field scoring rules (decide BEFORE looking at results):
+      make         normalised match (lowercase, strip punctuation,
+                   "A.O. Smith" == "AO Smith")
+      model        exact after normalising spaces/dashes
+      serial       exact; also report character error rate (CER) so
+                   "1 char off" is visible
+      mfg_date     correct if same year+month (or same year if only
+                   year printed)
+      damage_type  exact class match
+      room/surface exact (these come from voice)
+      size         within +-30% of tape-measured area -> "correct";
+                   also report mean absolute % error
+  - Calibration: group fields by confidence bucket (0-0.5, 0.5-0.8,
+    0.8-1.0) and compute accuracy per bucket. Good = accuracy rises
+    with confidence. Also: mean confidence of correct vs wrong.
+  - "Worst failure" definition: wrong answer with the HIGHEST
+    confidence (a confident wrong answer is the most dangerous for the
+    back office), then null on a clearly readable plate.
+  - Pandas (or plain csv) for the tables.
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Leakage: frames used to tune thresholds/confidence must not be
+    the frames we report on. Use the "eval" split; also report "all".
+  - Small set (~40) -> every frame is ~2.5%. Report counts (n) next to
+    every percentage so it is honest.
+  - Costs real API money. Count calls before running and keep the
+    run within budget. Cache results so re-scoring does not re-call
+    the API.
+  - The eval must use the SAME code path as the app, or the numbers
+    do not describe the app.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+tools/eval.py:
+  1. Read data/labels.csv.
+  2. For each frame:
+       - quality = tools/quality.score(frame)       (same as phone)
+       - result  = backend.extract.<type>(frame, quality, ...)
+         (room/surface for damage taken from labels, as if spoken)
+       - cache result in eval/cache/<file>.json (skip API if cached)
+  3. Score every field with the rules above -> eval/results.csv
+       file, split, type, lighting, is_blurry, gate_passed,
+       field, truth, predicted, confidence, correct, cer
+  4. Build eval/REPORT.md with tables:
+
+     T1  Test set composition
+         type x lighting x condition counts (prove 40+, 10+, 10+)
+     T2  Accuracy per field (eval split, n, % correct, mean conf)
+     T3  Accuracy by condition: good light vs low light,
+         sharp vs blurry, straight vs angled
+     T4  Calibration: confidence bucket -> n, accuracy
+         + mean confidence correct vs wrong
+     T5  Quality gate effect: accuracy on frames the gate passed vs
+         frames it would have rejected
+     T6  Five worst failures:
+         # | image (thumbnail link) | field | truth | predicted |
+           confidence | cause | fix idea
+     Cost: total calls, total $, $ per frame.
+
+  Cause categories for failures (pick one per failure, honestly):
+     glare on metal, low light, motion blur, small font / too far,
+     angle / perspective, embossed (not printed) characters, damaged
+     plate, model hallucination, ambiguous label (0/O, 1/I, 8/B),
+     ground-truth mistake (yes, check this too).
+
+
+5. STEPS
+--------
+Step 1 - Freeze the set (10 min)
+  - Recount data/labels.csv. Confirm 40+, 10+ nameplates, 10+ low
+    light. Add frames now if short (Phase 1 again, 15 min).
+  - No more threshold/prompt tuning on "eval" frames from here.
+
+Step 2 - Count cost, then run (25 min)
+  - Calls = number of frames (one call each) + notes.
+  - Estimate $ from Phase 5 per-call cost. Confirm within budget.
+  - Run tools/eval.py. Results cached.
+
+Step 3 - Scoring + tables (30 min)
+  - Implement scoring rules and the 6 tables.
+
+Step 4 - Investigate the 5 worst failures (30 min)
+  - Open each image, look at what the model read (raw_text), decide
+    the root cause, write a one-line fix idea.
+  - If a cause is a ground-truth mistake, fix labels.csv and say so
+    in the report (transparency scores well).
+
+Step 5 - React to what you see (20 min, optional)
+  - If calibration is bad (wrong answers have high confidence),
+    adjust the confidence weights using the TUNE split only, re-run,
+    report both before and after.
+
+Step 6 - Commit
+  - "phase 7: eval on N frames, per-field accuracy, worst failures"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] eval/REPORT.md exists with T1-T6 and cost.
+  [ ] Every percentage has its n next to it.
+  [ ] Accuracy per field for: make, model, serial, mfg_date,
+      damage_type, room, surface, size, note fields.
+  [ ] Low light vs good light accuracy reported separately.
+  [ ] Calibration table shows whether confidence tracks correctness
+      (and if not, says so).
+  [ ] 5 worst failures each have image, truth, predicted, confidence,
+      cause, fix idea.
+  [ ] Re-running tools/eval.py reproduces the numbers (from cache).
+
+
+7. OUTPUT
+---------
+  - tools/eval.py
+  - eval/results.csv, eval/REPORT.md, eval/cache/
+  - Commit
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Changing prompts after looking at eval failures and then
+    reporting the improved numbers as if untouched. If you change
+    anything, report before/after and say it.
+  - Percentages without n.
+  - Hiding bad numbers. Low-light accuracy will be bad - that is the
+    evidence for the hardware recommendation in the memo.

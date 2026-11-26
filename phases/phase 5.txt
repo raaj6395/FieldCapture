@@ -1,0 +1,202 @@
+PHASE 5 - EXTRACTION WITH CONFIDENCE
+====================================
+Time: ~2.5 hours (Hour 11-14)
+
+
+1. OBJECTIVE
+------------
+Core requirement 4. Turn each capture into structured fields:
+  - nameplate -> make, model, serial number, manufacture date
+  - damage    -> room, surface, damage type, rough size
+  - note      -> structured fields (location, issue, material,
+                 severity, action hint)
+Every field gets a confidence score between 0 and 1, and that score
+must actually GO DOWN when the answer is wrong. The graders check this
+explicitly ("confidence scores that go down when the answer is wrong").
+
+Extraction runs in the backend (Python), not on the phone. The phone
+uploads the capture; the backend calls the vision model. The eval
+script (Phase 7) calls the same Python function.
+
+
+MODEL DECISION (2026-11-26, supersedes the bake-off idea below)
+  Nameplate : ML Kit OCR on phone + Google Cloud Vision
+              DOCUMENT_TEXT_DETECTION on backend -> rules parse fields.
+              Two independent OCR reads = a strong confidence signal.
+  Damage    : Gemini Flash via AI Studio free tier (GEMINI_API_KEY).
+              gemini-2.5-flash worked (4.2 s, JSON mode); 3.8-flash gave
+              503 overloaded -> retry + fallback model list. See
+              docs/MODEL_NOTES.md. (Cloud Vision cannot classify damage.)
+  Notes     : Gemini Flash, text only.
+  Free tier: requests may be used by Google to improve models - state
+  this in README. Daily request limit: check AI Studio rate-limit view.
+  Cloud Vision: REST call images:annotate with the API key from
+  backend/.env (GOOGLE_CLOUD_VISION_API_KEY). Free tier covers our
+  ~50-frame eval (verify current quota on Google's pricing page).
+  Always count calls and ask before running a batch on the key.
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Cloud Vision: DOCUMENT_TEXT_DETECTION response shape (pages ->
+    blocks -> paragraphs -> words, each with a confidence), how to
+    rebuild lines, and per-word confidence for the serial field.
+  - Ollama: run Qwen3-VL 4B on an 8 GB M1, JSON output mode, latency
+    per image.
+  - (Original idea, now replaced) Vision model options: compare 2
+    hosted multimodal models on 5 nameplate frames: accuracy, cost per
+    image, latency.
+  - Structured output: force JSON via the model's tool / JSON-schema
+    mode, and validate with Pydantic.
+  - How to make the model say "I can't read it" instead of guessing:
+    allow null + explicit instruction; ask for a per-field
+    self-confidence and the exact text it read.
+  - Nameplate formats: serial numbers often encode the manufacture
+    date (e.g. letter = month, digits = year for many water heaters).
+    A decoded date that agrees with the printed date = strong signal.
+  - Image cost control: downscale (e.g. long side 1024 px) and JPEG
+    quality ~80 before sending; crop is a Phase 8 optimisation.
+  - FastAPI basics (one POST endpoint).
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Models hallucinate plausible serial numbers on blurry plates, with
+    high self-reported confidence. Model confidence alone is not
+    trustworthy.
+  - Dark/blurry frames that passed the gate (or were saved after 2
+    retakes) must produce LOWER confidence.
+  - Damage size from a single 2D image with no depth is a rough guess.
+    Confidence must reflect that.
+  - Room/surface: the tech already said them -> that is better than
+    anything the model guesses from the image.
+  - Cost and latency per call matter (Phase 8 measures them) -> log
+    tokens and time for every call from day one.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+backend/extract.py - one function per type:
+
+  extract_nameplate(image, quality) -> NameplateResult
+  extract_damage(image, quality, room, surface) -> DamageResult
+  extract_note(text) -> NoteResult
+
+Each field returned as:
+  { "value": ..., "confidence": 0.0-1.0, "raw_text": "...",
+    "signals": { "model": 0.9, "quality": 0.7, "validation": 1.0 } }
+
+Prompts (one per type, stored as text files in backend/prompts/):
+  - Nameplate: "Read the appliance nameplate. Return make, model,
+    serial, manufacture date exactly as printed. If a field is not
+    clearly legible return null. For each field give your confidence
+    0-1 and the raw characters you read."
+  - Damage: "Classify damage type from this list: water stain, mould,
+    crack, peeling paint, hole, swelling, none. Estimate the size of
+    the affected area in cm (width x height) using any reference
+    objects visible (outlets, door frames, tiles, a credit card).
+    Say what reference you used, or 'none'."
+  - Note: text-only: "Turn this field note into: location, issue,
+    material, severity (low/med/high), suggested action. Null if not
+    stated."
+
+Confidence = combination of independent signals (then checked in
+Phase 7 that it is calibrated):
+
+  model       model's own per-field confidence
+  quality     from the Phase 4 scores: 1.0 if all checks passed with
+              margin, down to ~0.4 for quality_flag "low" / very dark
+  validation  rule checks per field:
+                make     in known-brands list?              1.0 / 0.6
+                model    looks like a model code (letters+digits,
+                         4-20 chars)?                       1.0 / 0.5
+                serial   plausible length/charset, no spaces? 1.0 / 0.5
+                date     parseable, between 1980 and today? 1.0 / 0.3
+                         + agrees with serial-decoded date  boost
+                null     confidence = 0
+  source      room/surface from voice -> 0.95 (or ~0.6 if the word
+              was not in the known list); from image only -> model x 0.7
+
+  field_confidence = model x quality x validation   (clamped 0-1)
+
+  Simple multiply first. In Phase 7, if calibration is off, adjust
+  the weights on the "tune" split. Do not over-engineer.
+
+Size: model's estimate in cm, confidence starts low (max 0.5 when no
+reference object, up to ~0.8 with a known reference). Stretch A
+(Phase 8) replaces this with reference-object measurement.
+
+Logging per call: model name, input/output tokens, cost (USD),
+latency ms -> appended to backend/logs/calls.jsonl.
+
+
+5. STEPS
+--------
+Step 1 - Model bake-off (30 min)
+  - Small script: send 5 nameplate frames (from "tune" split) to 2
+    candidate models with the same prompt. Print each field vs truth,
+    cost, latency.
+  - BEFORE running: count calls (5 frames x 2 models = 10 calls) and
+    estimated cost; confirm it is within budget.
+  - Pick one model. Write 3 lines of reasoning for README.
+
+Step 2 - Schemas (15 min)
+  - Pydantic models for NameplateResult, DamageResult, NoteResult,
+    Field(value, confidence, raw_text, signals).
+
+Step 3 - Extractors + prompts (45 min)
+  - Implement 3 functions. Use the model's structured-output mode.
+  - Downscale image to long side 1024 before sending.
+  - Retry once on API error / invalid JSON, then return all-null with
+    confidence 0 and an error flag (never crash the job).
+
+Step 4 - Validation rules + confidence combination (30 min)
+  - Known brands list (~40 common appliance brands).
+  - Regex checks for model/serial, date parsing, a few serial-to-date
+    decoders for brands you actually captured.
+  - Quality factor from Phase 4 scores.
+
+Step 5 - Endpoint (15 min)
+  - POST /extract (internal) used by the upload flow in Phase 6.
+  - Simple CLI: python -m backend.extract data/raw/np_03_good.jpg
+    -> prints the JSON. Handy for the live session.
+
+Step 6 - Quick sanity run (10 min)
+  - 10 frames (mix of good and bad) from the "tune" split. Check that
+    wrong fields have lower confidence than right ones. If not,
+    adjust before Phase 7.
+
+Step 7 - Commit
+  - "phase 5: extraction with per-field confidence, model choice"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] All 3 extractors return JSON that validates against the schema.
+  [ ] Every field has a confidence 0-1; unreadable fields are null
+      with confidence 0 (not a guessed value).
+  [ ] Unit tests (no API calls): validation rules + confidence maths
+      (e.g. bad date -> confidence drops; low quality -> drops).
+  [ ] Sanity run on 10 frames: mean confidence of wrong fields is
+      clearly below mean confidence of correct fields (note numbers).
+  [ ] Cost per image and latency logged and noted.
+  [ ] Model choice + reasoning written down.
+
+
+7. OUTPUT
+---------
+  - backend/extract.py, backend/prompts/*, backend/schemas.py
+  - backend/logs/calls.jsonl (cost + latency, git-ignored)
+  - Unit tests for validation/confidence
+  - Model choice note (README)
+  - Commit
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Trusting the model's self-confidence alone.
+  - Letting the model guess room/surface when the tech already said
+    them.
+  - Running big eval batches now (that is Phase 7, and it costs money;
+    always count calls first).
+  - Putting the API key in the Android app. Keep it in backend/.env,
+    git-ignored.

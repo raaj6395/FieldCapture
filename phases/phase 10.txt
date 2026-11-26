@@ -1,0 +1,145 @@
+PHASE 10 - LIVE SESSION PREP
+============================
+Time: ~1 hour (after submitting, only if shortlisted)
+
+
+1. OBJECTIVE
+------------
+Be ready for the 90-minute live session:
+  - Walk-through (20 min): run the app live, show architecture,
+    explain the hardest call.
+  - Live change (30 min): add a 4th voice command end to end while
+    they watch (e.g. "capture moisture reading [value] [location]").
+  - Failure drill (20 min): root-cause one of our worst failures and
+    ship a measurable fix (or explain why it will not fit).
+  - Hardware & research (20 min): what breaks first on real glasses,
+    week-one test plan with five techs, questions for Meta.
+Not being able to explain your own code ends the process.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Our own code, every file: what it does, why it exists, what
+    calls it.
+  - The exact list of files a new command touches.
+  - The worst failures in eval/REPORT.md and their root causes.
+  - How to direct an AI tool on camera: give it the file list and the
+    pattern to copy, then verify its diff + run tests yourself.
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Pressure + a clock. A change that takes 20 min alone takes 30
+    while talking.
+  - They watch HOW you check AI output, not only the result.
+  - Questions on hardware need specific, evidence-backed answers, not
+    generic ones.
+
+
+4. HOW WE BUILD IT (PREPARATION)
+--------------------------------
+A) Live change rehearsal: "capture moisture reading [value] [location]"
+   Files touched (write this list on a sticky note):
+     1. CommandParser    + regex row:
+          ^capture moisture(?: reading)? (?<value>[\d.]+)(?: percent)?
+          (?: (?<location>.+))?$
+        + "point five" / "twelve" -> number (words-to-number helper)
+     2. Parser tests     + 4 phrases
+     3. CommandHandler   + branch: save as a "reading" (no photo
+                           needed; optional photo of the meter)
+                         + reply "Moisture 18 percent, kitchen wall."
+     4. Room queue       reuse notes path (type = moisture)
+     5. Backend schema   + "readings" array: { value, unit, location,
+                           confidence }
+     6. Mapping          + rule: moisture > 17% on drywall -> DRY-RR
+                           + DRY-EQ; > 25% subfloor -> SUBF-RR
+                           (state the threshold is an assumption)
+     7. Mapping tests    + 2 cases
+     8. Schema test      re-run
+   Rehearse once with a timer, using an AI tool. Target < 20 min.
+   Then `git stash` / reset it so the submitted repo stays as is.
+
+B) Failure drill rehearsal
+   - Pick the #1 worst failure from eval/REPORT.md.
+   - Know: the image, what the model read, why (root cause), and one
+     fix you can measure in 20 min (e.g. crop + upscale the plate
+     region, glare check tightened, prompt tells model to return null
+     for ambiguous characters, confidence penalty when raw_text has
+     0/O 1/I ambiguity).
+   - Know how to measure it: re-run tools/eval.py on the affected
+     frames (count API calls first) and compare before/after.
+
+C) Walk-through
+   - 2-minute architecture explanation using the README diagram.
+   - "Hardest call" story ready, e.g.: on-device quality gate with
+     burst capture and a 2-retake cap vs blocking the tech - tradeoff
+     between data quality and a tech who will switch off a fussy app;
+     or putting extraction on a backend vs on the phone.
+   - Have the app, mock device and backend running BEFORE the call.
+     Have the demo video as a backup if live setup fails.
+
+D) Hardware & research answers (write short bullet notes)
+   What breaks first on real glasses:
+     - battery + heat during continuous camera streaming,
+     - Bluetooth drops in basements/attics (metal ducts, distance to
+       phone in pocket),
+     - low light (our eval number),
+     - voice recognition in noise (fans, pumps, dehumidifiers),
+     - camera framing: head pose != where the eyes look; nameplates
+       low on appliances need the tech to bend down.
+   Week-one test with five techs:
+     - Day 1 baseline: each tech does 3 real jobs, we log every
+       capture, retake, disconnect, voice miss (app already logs).
+     - Metrics: usable-frame rate, retakes per job, voice error rate,
+       disconnects per hour, battery % per hour, time per job vs their
+       normal process, back-office edits per job record.
+     - Daily 10-min debrief; fix top issue each day; compare day 1
+       vs day 5.
+   Questions for Meta's developer team:
+     - When do Speech, Inputs and standalone Photo leave experimental?
+       Today they cannot ship to production channels - a field app
+       depends on all three.
+     - Can Speech take a custom vocabulary / grammar (room names,
+       "nameplate", brand names) to cut command errors?
+     - In-stream capturePhoto() vs standalone camera.photo: resolution
+       and latency numbers? Any exposure control or low-light mode?
+     - Thermal: at what thermalLevel does the device throttle or stop
+       the stream, and after how many minutes of streaming in a warm
+       attic?
+     - Reconnect: which session/stream states are guaranteed on a BT
+       drop vs a doff? Can a session survive a short drop instead of
+       going STOPPED?
+     - Roadmap for on-glasses compute (run the quality check on the
+       glasses to save bandwidth/battery)?
+
+
+5. STEPS
+--------
+  1. Rehearse the moisture command with a timer (25 min). Reset.
+  2. Prepare the failure-drill fix plan (15 min).
+  3. Write the hardware bullet notes (15 min).
+  4. Day of: start backend, mock device, app 15 min early; check
+     the network; have the video open as backup (5 min).
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Moisture command added end to end in < 20 min in rehearsal,
+      tests green, then reset.
+  [ ] Can explain every file in the repo without looking it up.
+  [ ] Failure #1: root cause + fix + measurement plan written down.
+  [ ] Hardware notes: what breaks first, 5-tech week-one plan,
+      5 questions for Meta.
+
+
+7. OUTPUT
+---------
+  - Personal notes (not committed): rehearsal timings, failure-drill
+    plan, hardware answers.
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Letting the AI tool write code you then cannot explain.
+  - Accepting AI output without running tests on camera.
+  - Generic hardware answers with no numbers from our own eval.

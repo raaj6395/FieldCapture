@@ -1,0 +1,290 @@
+FIELDCAPTURE - HANDS-FREE FIELD CAPTURE ON AI GLASSES
+=====================================================
+
+WHAT THIS ASSIGNMENT IS (IN SIMPLE WORDS)
+-----------------------------------------
+Build a mobile app called "FieldCapture" (iOS or Android) using Meta's
+Wearables Device Access Toolkit (DAT 1.0) SDK for AI glasses.
+
+A field technician (for example, someone inspecting water damage) walks
+through a house wearing smart glasses. They never touch the phone. They
+only speak voice commands. The glasses camera takes photos, the app checks
+the photo quality, extracts information using AI, and at the end produces
+a clean structured job record (JSON) plus a draft list of estimate line
+items (what work needs to be done and billed).
+
+You do NOT need real glasses. Use Meta's "Mock Device Kit" instead and feed
+it your phone camera or recorded video.
+
+What they really test:
+  - How fast you learn an SDK you have never used.
+  - How you prototype without the real hardware.
+  - Your judgment about what the hardware can and cannot do.
+  - Whether the whole loop survives real conditions: bad light, moving
+    camera, dropped connection, impatient user wearing gloves.
+
+Docs: wearables.developer.meta.com
+
+Example walk-through:
+  - At the water heater:  "capture nameplate"
+  - At a stained wall:    "capture damage, kitchen, north wall"
+  - Near the sink:        "note: subfloor soft by the cabinet"
+  - Walks out -> back office gets job record + evidence photos +
+    extracted fields + draft line items.
+
+
+TIME LIMITS
+-----------
+- 72 hours from receiving the brief (hard deadline).
+- Expected effort: about 16 to 20 hours. Do not burn all 72.
+
+
+=====================================================
+PART 1 - CORE REQUIREMENTS (ALL MUST WORK END TO END)
+=====================================================
+
+1. SDK INTEGRATION
+   - App registration with Meta DAT.
+   - Permissions (camera, mic, bluetooth, etc. as needed).
+   - Full session lifecycle on Mock Device Kit:
+       * start
+       * pause
+       * resume
+       * stop
+   - Recovery when the device disconnects halfway through a walk-through
+     (must reconnect / continue without losing data).
+
+2. THREE VOICE COMMANDS
+   - "capture nameplate"
+   - "capture damage [room] [surface]"   e.g. "capture damage kitchen north wall"
+   - "note: [free text]"                 e.g. "note: subfloor soft by the cabinet"
+   - If the mock has no audio path from the glasses, fall back to the
+     phone microphone AND explain why in the README.
+
+3. CAPTURE QUALITY CHECK (ON DEVICE)
+   - Detect bad frames on the phone itself (not in the cloud):
+       * blurry
+       * too dark
+       * badly framed (subject cut off / not in view)
+   - If bad, ask the tech to retake BEFORE they move on (voice/audio prompt).
+   - Document the thresholds you chose and HOW you arrived at them
+     (measured on your own real frames).
+
+4. EXTRACTION (AI / VISION)
+   - Nameplate capture -> make, model, serial number, manufacture date.
+   - Damage capture   -> room, surface, damage type, rough size.
+   - Note             -> converted into structured fields.
+   - EVERY field must have a confidence score.
+   - Confidence should go DOWN when the answer is wrong (calibrated).
+
+5. JOB RECORD + DRAFT LINE ITEMS
+   - Output ONE JSON job record per walk-through, following a schema you
+     design yourself.
+   - Define your own list of 10 to 15 line-item codes, e.g.
+       "remove and replace drywall, per sq ft".
+   - Map what was observed to those line items (draft estimate).
+
+6. YOUR OWN EVALUATION
+   - Build a test set of AT LEAST 40 frames, including:
+       * at least 10 nameplates
+       * at least 10 low-light shots
+   - Report accuracy PER FIELD (make, model, serial, date, damage type...).
+   - Show the 5 worst failures and the cause of each one.
+
+7. BAD CONNECTIVITY / OFFLINE
+   - Captures are queued on the device when there is no signal.
+   - Upload automatically when signal comes back.
+   - Nothing gets lost (survives app restart / disconnects).
+
+
+=====================================================
+PART 2 - STRETCH GOALS (PICK ONLY 1 OR 2, DO THEM WELL)
+=====================================================
+One done properly scores higher than three half done.
+
+A. SIZE WITHOUT DEPTH
+   - Glasses have no depth sensor. Estimate the size of a damaged area
+     anyway. Show your error against a real tape measure.
+
+B. GLASSES VS PHONE
+   - Capture the same scenes through the mock glasses feed and the phone
+     camera. Compare usable-frame rate and extraction accuracy.
+
+C. SENSOR PROTOTYPE
+   - Pick one sensor to add to industrial safety glasses (work light,
+     time-of-flight, thermal or moisture). Optionally build a bench
+     prototype (e.g. ESP32 + ToF sensor). Show data it gives that the
+     camera cannot.
+
+D. COST AND LATENCY
+   - Measure cost per job and delay from capture to job record.
+   - Show how you would cut one of them in half.
+
+
+=====================================================
+PART 3 - DELIVERABLES (WHAT TO SEND)
+=====================================================
+
+1. CODE
+   - A GitHub repo they can clone.
+   - Commit as you go (they read the commit history).
+
+2. README
+   - Setup in under 10 minutes on a clean machine.
+   - Architecture in ONE diagram.
+   - What you would do with two more weeks.
+   - Which AI coding tools you used and where.
+   - Which vision / speech models you used, why, and cost per job.
+   - Assumptions you made where the brief was unclear.
+   - Known limitations / what does not work (flagging costs nothing).
+   - What you cut and why.
+
+3. DEMO VIDEO
+   - Maximum 5 minutes.
+   - One full walk-through in your own space.
+   - Must include at least one failure the app catches and recovers from
+     (e.g. blurry/dark frame retake, disconnect recovery).
+   - Footage must come from the exact build you submit.
+
+4. EVAL REPORT
+   - The test set (40+ frames).
+   - Accuracy per field (real numbers).
+   - Five worst failures with their causes.
+
+5. RESEARCH MEMO (ONE PAGE)
+   - What today's Meta glasses can and cannot do for field estimation.
+   - What you found out about the SDK that the docs leave out.
+   - The first hardware change you would make (backed by evidence).
+   - Must be your own findings, not a restatement of Meta's docs.
+
+6. SAMPLE OUTPUT
+   - Three JSON job records from real walk-throughs.
+
+
+=====================================================
+PART 4 - SCORING (OUT OF 100)
+=====================================================
+Honest measurements count a lot. A smaller app with real numbers beats a
+bigger one that cannot be verified.
+
+  Works end to end ........................ 20
+    Voice command -> job record with no hand-holding; recovers from
+    disconnects and bad frames.
+
+  Extraction and evaluation ............... 20
+    Per-field accuracy, failures explained by cause, confidence scores
+    that drop when the answer is wrong.
+
+  SDK depth ............................... 15
+    Lifecycle edge cases handled; clear notes on what the mock cannot
+    simulate and what will change on real glasses.
+
+  Research and hardware judgment .......... 15
+    Memo with your own findings + specific hardware recommendation
+    backed by evidence.
+
+  Capture quality engineering ............. 10
+    Thresholds measured on real frames; retake prompts a tech would not
+    want to switch off.
+
+  Product judgment ........................ 10
+    Decisions made for someone wearing gloves in an attic with no signal.
+    Explain what you cut and why.
+
+  Code and README ......................... 10
+    Readable code, tests where they matter, setup under 10 minutes.
+
+
+=====================================================
+PART 5 - GROUND RULES
+=====================================================
+
+ALLOWED:
+  - AI coding tools (Meta ships SDK skills for Claude Code, Cursor, etc.).
+    Note in README which tools and where.
+  - Any vision or speech model. State which, why, and cost per job.
+  - Make assumptions where the brief is unclear, and write them down.
+    (No questions answered during the 72 hours.)
+  - Tell them what does not work.
+
+NOT ALLOWED:
+  - Off-the-shelf inspection/estimation products that do the whole job.
+    (Libraries and model APIs are fine.)
+  - Fake data. Every frame in the test set and demo must be your own
+    capture.
+  - Filming people, or any property you do not have permission to film.
+  - Spending more than $50 on APIs or parts (keep receipts; reimbursed
+    up to $50).
+
+INSTANT DISQUALIFICATION:
+  - Demo footage that did not come from the submitted build.
+  - Accuracy numbers with no test set behind them.
+  - Not being able to explain your own code in the live session.
+
+
+=====================================================
+PART 6 - DATA YOU MUST CAPTURE YOURSELF
+=====================================================
+No data is provided. Film at home or anywhere you have permission.
+Suggested scenes:
+  - Appliance nameplates (water heater, fridge, washer, AC, microwave...)
+    -> at least 10
+  - Walls (stains / marks / damage)
+  - Ceiling
+  - Dark cupboard (low light) -> at least 10 low-light shots total
+  - Include blurry / moving-camera shots to test the quality check.
+
+
+=====================================================
+PART 7 - LIVE SESSION (IF SHORTLISTED, 90 MINUTES)
+=====================================================
+Be ready for:
+
+1. Walk-through (20 min)
+   - Run the app live, show architecture, explain your hardest decision.
+
+2. Live change (30 min)
+   - Add a 4th voice command end to end while they watch, e.g.
+     "capture moisture reading [value] [location]".
+   - AI tools allowed; they watch how you direct and verify them.
+   - => Design the code so adding a new command is easy.
+
+3. Failure drill (20 min)
+   - They pick one of your worst failures. Find root cause and ship a
+     measurable fix, or explain why it will not fit in the time.
+
+4. Hardware and research (20 min)
+   - What breaks first on real glasses?
+   - How would you test it in week one with five techs?
+   - What would you ask Meta's developer team?
+
+
+=====================================================
+FINAL CHECKLIST
+=====================================================
+[ ] App on DAT 1.0 + Mock Device Kit (registration, permissions)
+[ ] Session start / pause / resume / stop
+[ ] Disconnect recovery mid-walk
+[ ] Voice: "capture nameplate"
+[ ] Voice: "capture damage [room] [surface]"
+[ ] Voice: "note: [free text]"
+[ ] Phone-mic fallback documented (if needed)
+[ ] On-device blur / dark / framing check + retake prompt
+[ ] Thresholds documented with measurement method
+[ ] Nameplate extraction (make, model, serial, mfg date) + confidence
+[ ] Damage extraction (room, surface, type, size) + confidence
+[ ] Note -> structured fields + confidence
+[ ] JSON job record schema
+[ ] 10-15 line-item codes + mapping
+[ ] Offline queue + auto upload, no data loss
+[ ] Test set: 40+ frames (10+ nameplates, 10+ low-light)
+[ ] Per-field accuracy + 5 worst failures with causes
+[ ] 1-2 stretch goals done well
+[ ] GitHub repo with incremental commits
+[ ] README (setup <10 min, 1 diagram, 2-week plan, tools, models, cost,
+    assumptions, limitations, cuts)
+[ ] Demo video <= 5 min with a caught + recovered failure
+[ ] Eval report
+[ ] One-page research memo
+[ ] 3 sample JSON job records from real walk-throughs
+[ ] Total spend <= $50, receipts kept

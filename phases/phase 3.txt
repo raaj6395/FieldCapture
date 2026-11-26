@@ -1,0 +1,195 @@
+PHASE 3 - VOICE COMMANDS
+========================
+Time: ~2 hours (Hour 7-9)
+
+
+1. OBJECTIVE
+------------
+Core requirement 2. The tech never touches the phone. The app listens
+all the time and understands:
+  - "capture nameplate"
+  - "capture damage [room] [surface]"   e.g. "capture damage kitchen north wall"
+  - "note: [free text]"                 e.g. "note subfloor soft by the cabinet"
+plus session control: "start job", "pause", "resume", "end job",
+"retake".
+
+Every command gets a short spoken reply so the tech knows it worked
+without looking. Design so the live-session 4th command ("capture
+moisture reading [value] [location]") is one table row + one handler.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+Verified from the mwdat-android skills:
+  - DAT Speech capability (mwdat-speech, experimental): recognition
+    runs on the glasses; app gets partial + final transcriptions with
+    confidence (0-1, or -1 if unknown).
+      session.addSpeech() after STARTED -> collect transcriptions,
+      state, errors -> speech.start(). stop() is reusable, remove is
+      terminal. Needs Permission.MICROPHONE + Developer Center enable.
+  - In MockDeviceKit, Speech has two sources:
+      "injected"      tests push text: simulateTranscription(...)
+      "liveDeviceAsr" transcribes the PHONE mic with the Android
+                      recognizer (needs RECORD_AUDIO)
+  - Raw audio streaming exists, but the mock does not deliver audio
+    frames -> not our path.
+  - Inputs capability (experimental): glasses capture button / taps
+    as events; mock can inject them.
+
+So the audio path is:
+  Real glasses : glasses mic -> on-glasses ASR -> DAT Speech -> app
+  Mock         : phone mic -> Android ASR (liveDeviceAsr) -> DAT
+                 Speech -> app
+  Same app code. In the mock the sound physically comes from the
+  phone mic because the mock has no microphone of its own. That is
+  the "phone mic fallback, and why" for the README.
+
+  Fallback if Speech is NOT available in Developer Mode (Phase 0 Q3):
+  use Android SpeechRecognizer directly on the phone mic
+  (EXTRA_PREFER_OFFLINE; restart after every result; it beeps and
+  stops on silence). Same parser downstream.
+
+Also:
+  - Android TextToSpeech for replies (on real glasses it plays through
+    the glasses speakers as BT audio). Short earcons beat words.
+  - Regex in Kotlin.
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Speech-to-text is messy: "capture name plate", "captured damage",
+    "notes sub floor soft". Exact matching fails.
+  - Room/surface can be missing ("capture damage") -> must not reject.
+  - Random speech (talking to the homeowner) must not trigger
+    captures -> commands must start with a keyword.
+  - TTS replies can be heard by the mic and parsed as commands.
+  - No signal in an attic -> recognition must work offline (on-glasses
+    Speech is on-device; Android recognizer needs the offline pack).
+  - Gloves + noise: voice may fail completely -> a physical backup
+    (glasses capture button via Inputs) is worth having.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+Four small pieces:
+
+  a) VoiceSource (Android/SDK-specific)
+     - Primary: DAT Speech. Use FINAL transcriptions only (ignore
+       partials for commands). Keep the ASR confidence.
+     - Fallback: Android SpeechRecognizer loop, same output.
+     - Mutes itself while TTS is speaking.
+     - Emits (text, asr_confidence).
+
+  b) CommandParser (pure Kotlin -> unit-testable)
+     - normalize(text): lowercase, strip punctuation,
+         "name plate" -> "nameplate", "captured" -> "capture",
+         "notes"/"node" -> "note", "sub floor" -> "subfloor"
+     - Command table, checked in order:
+
+         pattern                                   -> command
+         ^capture nameplate$                       -> CaptureNameplate
+         ^capture damage( <room>)?( <surface>)?$   -> CaptureDamage
+         ^note[: ]+(?<text>.+)$                    -> Note(text)
+         ^(start|begin) job$                       -> Start
+         ^pause( job)?$                            -> Pause
+         ^resume( job)?$                           -> Resume
+         ^(end|stop|finish) job$                   -> Stop
+         ^(retake|again)$                          -> Retake
+         anything else                             -> Unknown
+
+     - Rooms and surfaces matched against known lists, longest first:
+         rooms: kitchen, bathroom, bedroom, living room, basement,
+                attic, laundry, hallway, garage, utility, ...
+         surfaces: north/south/east/west wall, wall, ceiling, floor,
+                   subfloor, cabinet, window, door, ...
+       Unknown words kept as raw text, flagged "unrecognised".
+
+  c) CommandHandler
+     - CaptureNameplate -> jobSession.captureStill(nameplate)
+     - CaptureDamage    -> captureStill(damage, room, surface);
+                           missing room -> last room this job; say
+                           "Kitchen, north wall."
+     - Note             -> save text + timestamp (no photo)
+     - Start/Pause/...  -> JobSession (Phase 2)
+     - ASR confidence < 0.5 on a capture command -> still act, but log
+       it in the capture (helps the eval of voice errors).
+     - Replies: "Nameplate." / "Damage, kitchen, north wall." /
+       "Noted." / unknown keyword -> "Didn't catch that." Random
+       chatter is silently ignored.
+
+  d) Capture button (Inputs, if it works in Developer Mode)
+     - InputEvent.Capture short press -> repeat the last capture
+       command (e.g. another damage shot in the same room).
+     - Glove-friendly, noise-proof backup. If Inputs is unavailable,
+       write that down and skip.
+
+  4th command later = 1 regex row + 1 handler branch.
+
+
+5. STEPS
+--------
+Step 1 - CommandParser + tests first (40 min)
+  - 20+ test phrases before the parser:
+      "capture nameplate", "Capture name plate.", "captured nameplate",
+      "capture damage kitchen north wall", "capture damage, kitchen,
+      north wall", "capture damage living room ceiling",
+      "capture damage", "capture damage garage",
+      "note: subfloor soft by the cabinet", "notes sub floor soft",
+      "pause", "resume job", "end job", "hello there" (ignore),
+      "capture" (unknown), ...
+  - Implement normalize + table until green.
+
+Step 2 - VoiceSource on DAT Speech (30 min)
+  - addSpeech once on STARTED (together with the camera), collect
+    final transcriptions, start.
+  - Mock: set speech source to liveDeviceAsr (debug panel or MCP
+    mock_speech_set_transcription_source) and grant RECORD_AUDIO.
+  - If Phase 0 showed Speech unavailable -> Android SpeechRecognizer.
+
+Step 3 - CommandHandler + TTS (25 min)
+  - Wire to JobSession; mute VoiceSource while speaking.
+
+Step 4 - Capture button via Inputs (10 min, optional)
+
+Step 5 - End-to-end automated test (15 min)
+  - Instrumentation test with MockDeviceKit "injected" source:
+      simulateTranscription("capture nameplate", isFinal=true,
+      confidence=0.9f) -> assert a capture exists for the job.
+    Repeat for damage and note. Deterministic, no human voice.
+
+Step 6 - Measure real recognition (15 min)
+  - Live source: 20 spoken commands in a quiet room, 10 with a fan /
+    TV on. Count correct / wrong / missed. Record in SDK_NOTES.md.
+
+Step 7 - Commit
+  - "phase 3: voice commands on DAT Speech, parser tests, e2e test"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Parser unit test: 20+ phrases mapped correctly.
+  [ ] Instrumentation test: injected transcriptions create the right
+      captures / notes.
+  [ ] On phone with live speech: each of the 3 commands works with the
+      screen off, with a spoken reply.
+  [ ] "pause" / "resume" / "end job" work by voice.
+  [ ] Random speech does not trigger captures.
+  [ ] Recognition measured: X/20 quiet, Y/10 noisy.
+  [ ] README text drafted: audio path + why phone mic in the mock.
+
+
+7. OUTPUT
+---------
+  - VoiceSource, CommandParser (+ tests), CommandHandler, optional
+    capture-button handler, instrumentation test.
+  - Recognition numbers in SDK_NOTES.md.
+  - Commit.
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Acting on partial transcriptions (double captures).
+  - Cloud STT that dies with no signal.
+  - Long spoken replies.
+  - Parser logic leaking into the handler.
+  - Mic hearing TTS and looping.

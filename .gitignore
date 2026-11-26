@@ -1,0 +1,15 @@
+.DS_Store
+.env
+local.properties
+*.keystore
+*.jks
+build/
+.gradle/
+.idea/
+.kotlin/
+captures/
+__pycache__/
+*.pyc
+.venv/
+backend/logs/
+receipts/

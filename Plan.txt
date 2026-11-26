@@ -1,0 +1,406 @@
+FIELDCAPTURE - PHASE PLAN
+=========================
+
+Budget: ~18-20 hours of work inside the 72-hour window. $50 max spend.
+Rule for every phase: commit when the phase's test objective passes.
+Each phase has:  GOAL -> STUDY -> BUILD -> TEST OBJECTIVE (done when) -> OUTPUT
+
+
+-----------------------------------------------------------------
+KEY DECISIONS TO LOCK IN PHASE 0 (do not revisit later)
+-----------------------------------------------------------------
+- Platform: Android (Kotlin) recommended. Free sideloading, no Apple
+  developer account, easy file access for test frames. Switch to iOS
+  only if the DAT Android Mock Device Kit is missing or broken.
+
+- Models (decided 2026-11-26):
+    Nameplate OCR : Google ML Kit on the phone (offline, instant)
+                    + Google Cloud Vision DOCUMENT_TEXT_DETECTION on the
+                    backend (more accurate). Agreement between the two
+                    raises confidence, disagreement lowers it.
+    Nameplate fields : rules on the OCR text (no LLM unless rules fail).
+    Damage type + size : Gemini Flash (free tier, AI Studio key),
+                    gemini-2.5-flash, fallback list for 503s.
+                    Cloud Vision cannot judge damage type.
+    Note fields   : Gemini Flash (text only).
+    No local models (Ollama dropped).
+  Key lives in backend/.env (git-ignored), never in env.sh.
+
+- SDK: DAT 1.1.0 from Maven Central (no token). Meta's Claude Code
+  plugin mwdat-android is installed - its skills hold the exact APIs.
+  Verified facts are in phases/phase 0.txt section 2.
+- Speech: DAT Speech capability (on-glasses ASR). In the mock its
+  "liveDeviceAsr" source transcribes the phone mic -> same code for
+  mock and real glasses. Fallback: Android SpeechRecognizer if Speech
+  is unavailable in Developer Mode.
+
+- Quality check: pure on-device math (Laplacian variance for blur,
+  mean luminance for dark, simple framing heuristic). No ML.
+
+- Offline queue: Room DB (or files + JSON index) + WorkManager with a
+  network constraint. Survives app kill.
+
+- Backend: one tiny Python (FastAPI) service. Phone = capture +
+  quality check + offline queue. Backend = extraction + job record +
+  line items. Keeps the API key off the phone, and the eval script
+  calls the exact same extraction code. "Back office" = the JSON job
+  record the backend writes.
+  
+- Stretch goals: D (Cost & Latency) + A (Size without depth).
+  D is cheap and pure measurement. A needs only a tape measure + a
+  reference object (credit card / A4 sheet).
+
+
+=================================================================
+PHASE 0 - SDK RECON AND PROJECT SETUP            (~2 h)   Hour 0-2
+=================================================================
+GOAL
+  Understand Meta DAT 1.0 + Mock Device Kit well enough to know what
+  is possible before writing real code.
+
+STUDY
+  - wearables.developer.meta.com: getting started, app registration,
+    permissions, session lifecycle, camera stream / photo capture,
+    audio access, Mock Device Kit.
+  - Does the mock expose an audio/mic path from the glasses? (decides
+    phone-mic fallback)
+  - How the mock feeds video: phone camera vs recorded file.
+  - What events fire on disconnect / reconnect / pause.
+  - Meta's Claude Code SDK skill (if available) - install it.
+  - Start a running "SDK_NOTES.md": every gotcha the docs do not
+    mention (feeds the research memo later).
+
+BUILD
+  - Git repo + Android project skeleton, SDK dependency added.
+  - App registered, builds and launches on the phone.
+
+TEST OBJECTIVE (done when)
+  [ ] App builds and runs on a real phone.
+  [ ] Mock Device Kit device shows up / pairs in the app.
+  [ ] You can answer in writing: how does start/pause/resume/stop work,
+      what happens on disconnect, is there glasses audio in the mock.
+
+OUTPUT
+  Repo skeleton, SDK_NOTES.md, first commit.
+
+
+=================================================================
+PHASE 1 - CAPTURE YOUR OWN DATA                  (~1.5 h) Hour 2-4
+=================================================================
+GOAL
+  Get real frames early. Thresholds (Phase 4) and eval (Phase 7) both
+  depend on this, so do it before building features.
+
+STUDY
+  - Which appliances at home have nameplates (water heater, fridge,
+    washer, AC, microwave, TV back, router, inverter, geyser...).
+  - Permission rules: no people in frame, only your own property.
+
+BUILD (filming, not code)
+  - 12+ nameplates, each in: good light / low light / blurry / angled.
+  - 10+ low-light shots (dark cupboard, under sink, lights off).
+  - Walls, ceiling, any stains/marks/cracks (real or harmless fake
+    marks like a wet patch you dry later - note which are staged).
+  - A few blurry / motion shots and badly framed shots on purpose.
+  - Record 2-3 short walk-through videos to feed the mock.
+  - For damage shots: tape-measure the real size and write it down
+    (needed for stretch A).
+
+TEST OBJECTIVE (done when)
+  [ ] 50+ raw frames on disk (aim above 40 to allow rejects).
+  [ ] labels.csv started: file, type, true make/model/serial/date,
+      room, surface, damage type, true size, lighting, is_blurry.
+
+OUTPUT
+  data/raw/, data/labels.csv (ground truth written by hand).
+
+
+=================================================================
+PHASE 2 - SDK SESSION LIFECYCLE + RECOVERY       (~3 h)   Hour 4-7
+=================================================================
+GOAL
+  Core req 1: start, pause, resume, stop, and recover from a device
+  drop mid-walk.
+
+STUDY
+  - SDK session state machine and callbacks.
+  - Android permissions flow (camera, mic, bluetooth, notifications).
+  - Foreground service so the session survives screen-off.
+
+BUILD
+  - One explicit state machine: IDLE -> CONNECTING -> ACTIVE <-> PAUSED
+    -> RECONNECTING -> STOPPED. One class, no abstractions.
+  - Job ID created on start; all captures belong to it.
+  - On disconnect: keep job open, retry with backoff, audio cue
+    "glasses disconnected / reconnected", resume same job.
+  - Grab a frame from the mock stream on demand.
+
+TEST OBJECTIVE (done when)
+  [ ] Start -> pause -> resume -> stop works, logged in order.
+  [ ] Kill/disconnect the mock device mid-session -> app shows
+      RECONNECTING -> reconnects -> same job ID continues.
+  [ ] Captures taken before the drop still exist after reconnect.
+  [ ] Written note: what the mock CANNOT simulate (battery, thermal
+      throttling, real BT range, real lighting on glasses camera...).
+
+OUTPUT
+  Working lifecycle, SDK_NOTES.md updated, commit.
+
+
+=================================================================
+PHASE 3 - VOICE COMMANDS                         (~2 h)   Hour 7-9
+=================================================================
+GOAL
+  Core req 2: "capture nameplate", "capture damage [room] [surface]",
+  "note: [free text]". Hands-free, continuous listening.
+
+STUDY
+  - Glasses audio path in the mock (from Phase 0). If none -> phone
+    mic fallback, document why.
+  - Android SpeechRecognizer continuous mode, offline language pack.
+  - Text-to-speech for spoken feedback (tech never looks at screen).
+
+BUILD
+  - One command parser: a table of { pattern -> handler }. Adding a
+    4th command (live session: "capture moisture reading [value]
+    [location]") must be ONE new table row + one handler.
+  - Fuzzy matching ("capture name plate", "captured damage").
+  - Spoken confirmation for every command ("Nameplate captured").
+  - Unknown command -> short spoken "Didn't catch that".
+
+TEST OBJECTIVE (done when)
+  [ ] Unit test: parser maps 15+ sample phrases (incl. messy ones)
+      to the right command + arguments.
+  [ ] Saying each of the 3 commands on the phone triggers the right
+      action with spoken confirmation.
+  [ ] Measure: out of 20 spoken commands, how many recognised (note
+      the number - goes in README).
+
+OUTPUT
+  Voice layer + parser tests, commit.
+
+
+=================================================================
+PHASE 4 - CAPTURE QUALITY CHECK                  (~2 h)   Hour 9-11
+=================================================================
+GOAL
+  Core req 3: catch blurry, dark, badly framed frames ON DEVICE and
+  ask for a retake before the tech moves on.
+
+STUDY
+  - Blur: variance of the Laplacian.
+  - Dark: mean luminance + % of clipped-black pixels.
+  - Framing: edge density / text-region in center vs border, or
+    "subject touches the frame edge".
+  - How to pick a threshold from data: compute the score on every
+    labelled frame, plot good vs bad, pick the cut that best separates
+    them (and favour few false alarms - techs hate fussy apps).
+
+BUILD
+  - A small script (Python, on laptop) that runs the same metrics on
+    data/raw and prints scores per frame -> choose thresholds.
+  - Same metrics in Kotlin on the phone, using those thresholds.
+  - Retake prompt is short and specific: "Too dark - turn on your
+    light" / "Blurry - hold still" / "Nameplate cut off - step back".
+  - Auto-retake: grab next few frames from the stream and keep the
+    sharpest before bothering the tech at all.
+  - Max 2 retake prompts, then accept with a low-quality flag (never
+    block the tech).
+
+TEST OBJECTIVE (done when)
+  [ ] Threshold table with numbers: score distribution for good vs bad
+      frames, chosen cut, false-reject rate, false-accept rate.
+  [ ] Python and Kotlin give the same score on the same image (±small).
+  [ ] On the phone: a deliberately blurry and a dark capture each get
+      the right retake prompt.
+
+OUTPUT
+  quality thresholds doc section, script, on-device checker, commit.
+
+
+=================================================================
+PHASE 5 - EXTRACTION WITH CONFIDENCE             (~2.5 h) Hour 11-14
+=================================================================
+GOAL
+  Core req 4: nameplate -> make/model/serial/mfg date; damage ->
+  room/surface/damage type/rough size; note -> structured fields.
+  Every field has a confidence score that drops when wrong.
+
+STUDY
+  - Pick vision model: try 2 candidates on 5 nameplates, compare
+    accuracy, cost per image, latency. Pick one, write why.
+  - Structured JSON output from the model (schema / tool output).
+  - Confidence that means something: combine
+      model self-reported confidence
+      + frame quality score (dark/blurry -> lower)
+      + format validation (serial looks like a serial? date parseable?
+        model number matches known pattern for that make?)
+      + room/surface from voice vs from image agreement.
+  - Serial-number date decoding for common brands (bonus signal).
+
+BUILD
+  - One extractor per command type, one prompt each.
+  - Note text -> fields (location, issue, material, severity) via the
+    same model (text only, cheap).
+  - Room/surface for damage come from the voice command (high
+    confidence), damage type + size from the image.
+
+TEST OBJECTIVE (done when)
+  [ ] Each capture type returns valid JSON matching the schema.
+  [ ] Every field has a 0-1 confidence.
+  [ ] Quick check on 10 frames: wrong answers have visibly lower
+      confidence than right ones.
+  [ ] Cost per image and latency noted.
+
+OUTPUT
+  Extraction module, model choice note, commit.
+
+
+=================================================================
+PHASE 6 - JOB RECORD, LINE ITEMS, OFFLINE QUEUE  (~2.5 h) Hour 14-16
+=================================================================
+GOAL
+  Core req 5 + 7: one JSON job record per walk, 10-15 line-item codes,
+  captures queued offline and uploaded later with zero loss.
+
+STUDY
+  - Restoration estimating basics (water damage): drywall, baseboard,
+    insulation, subfloor, paint, dehumidifier days, antimicrobial,
+    ceiling, cabinet detach/reset, water heater replace, etc.
+  - WorkManager + network constraint, Room transactions.
+
+BUILD
+  - JSON schema (jobs/schema.json): job, tech, timestamps, session
+    events, captures[] (photo path, quality scores, extracted fields +
+    confidence), notes[], line_items[] (code, description, unit, qty,
+    source capture IDs, confidence).
+  - Line-item catalog: 10-15 codes in one JSON file.
+  - Rules mapping (plain if/else table): e.g. damage type=water stain
+    on wall + size -> DRY-RR per sq ft + PNT per sq ft. Low confidence
+    -> item marked "needs review".
+  - Offline flow: every capture saved locally FIRST (photo + metadata),
+    then queued. Extraction + upload run when network returns.
+    Idempotent upload (capture ID as key) so retries never duplicate.
+
+TEST OBJECTIVE (done when)
+  [ ] Schema validation test: generated job record passes the schema.
+  [ ] Mapping test: given 3 fake observations -> expected line items.
+  [ ] Airplane mode test: do 5 captures offline -> kill app -> reopen
+      -> turn network on -> all 5 processed, none lost, none duplicated.
+
+OUTPUT
+  schema.json, line_items.json, mapping, queue, commit.
+
+
+=================================================================
+PHASE 7 - EVALUATION                             (~2 h)   Hour 16-18
+=================================================================
+GOAL
+  Core req 6: 40+ frame test set (10+ nameplates, 10+ low light),
+  accuracy per field, five worst failures with causes.
+
+STUDY
+  - Scoring rules per field: exact match (serial), normalised match
+    (make: "A.O. Smith" == "AO Smith"), date within same year/month,
+    damage type exact, size within ±X%.
+  - Calibration check: accuracy bucketed by confidence (0-0.5,
+    0.5-0.8, 0.8-1). High-confidence bucket should be most accurate.
+
+BUILD
+  - eval script: runs the SAME extraction code path on data/ frames,
+    compares to labels.csv, prints a table.
+  - Results saved as eval/results.csv + eval/REPORT.md.
+
+TEST OBJECTIVE (done when)
+  [ ] 40+ frames evaluated, counts per category stated.
+  [ ] Per-field accuracy table (real numbers).
+  [ ] Accuracy split: good light vs low light, sharp vs blurry.
+  [ ] Confidence vs accuracy table.
+  [ ] 5 worst failures: image, expected, got, confidence, root cause
+      (glare, tiny font, angle, dark, model hallucination...).
+  [ ] Quality gate effect: accuracy on frames it accepted vs rejected.
+
+OUTPUT
+  eval/REPORT.md, commit.
+
+
+=================================================================
+PHASE 8 - STRETCH GOALS (D + A)                  (~2 h)   Hour 18-20
+=================================================================
+D. COST AND LATENCY
+  STUDY   token/image pricing of your model, where time is spent.
+  BUILD   timestamp every stage (capture, quality check, queue,
+          upload, extraction, record built). Sum cost per job.
+  TEST    [ ] Table: cost per job + median/p90 latency per stage.
+          [ ] One change that halves one of them, MEASURED before/after
+              (e.g. downscale/crop image before sending, batch notes,
+              cheaper model for notes, on-device OCR pre-pass).
+
+A. SIZE WITHOUT DEPTH
+  STUDY   reference-object scaling (credit card 85.6 x 54 mm / A4
+          sheet / standard outlet plate / door height).
+  BUILD   detect reference object, pixels-per-mm, measure damage box.
+  TEST    [ ] Table: estimated vs tape-measured size on 8+ damage
+              shots, mean absolute % error, worst case explained.
+
+OUTPUT
+  Stretch section in eval report, commit.
+
+
+=================================================================
+PHASE 9 - DELIVERABLES                           (~2 h)   Hour 20-22
+=================================================================
+GOAL
+  Package everything. They score honesty and clarity heavily.
+
+BUILD
+  - README: setup <10 min (test it on a clean clone), ONE architecture
+    diagram, model choices + why + cost per job, AI tools used and
+    where, assumptions, known limitations, what was cut and why,
+    2-more-weeks plan.
+  - RESEARCH_MEMO.md (one page): what current Meta glasses can/can't
+    do for field estimation, SDK findings the docs leave out (from
+    SDK_NOTES.md), first hardware change + evidence (e.g. low-light
+    accuracy drop -> add work light / ToF; numbers from eval).
+  - samples/: 3 JSON job records from 3 real walk-throughs.
+  - Demo video <= 5 min from the submitted build: full walk, one
+    blurry/dark retake, one disconnect + recovery, offline -> upload,
+    final job record shown.
+
+TEST OBJECTIVE (done when)
+  [ ] Fresh clone -> follow README -> app running in under 10 min.
+  [ ] Every number in README/memo traces back to eval files.
+  [ ] Video under 5 min, shows a caught failure + recovery.
+  [ ] Final checklist in requirement.txt fully ticked.
+
+OUTPUT
+  Submission-ready repo + video link.
+
+
+=================================================================
+PHASE 10 - LIVE SESSION PREP                     (~1 h)   after submit
+=================================================================
+  [ ] Practise adding "capture moisture reading [value] [location]"
+      end to end (parser row, handler, extraction, schema field, line
+      item) in under 20 min. Then git reset it.
+  [ ] Pick your worst failure, know its root cause and a fix idea.
+  [ ] Be able to explain every file in the repo.
+  [ ] Prepare answers: what breaks first on real glasses (battery,
+      heat, BT drop, glare, audio in noise), week-one test plan with
+      5 techs, 3 questions for Meta's dev team.
+
+
+-----------------------------------------------------------------
+TIMELINE SUMMARY
+-----------------------------------------------------------------
+  Day 1 : Phase 0, 1, 2, 3          (SDK + data + lifecycle + voice)
+  Day 2 : Phase 4, 5, 6, 7          (quality + extraction + record + eval)
+  Day 3 : Phase 8, 9, (10)          (stretch + deliverables + prep)
+
+-----------------------------------------------------------------
+CUT LIST (if running late, drop in this order)
+-----------------------------------------------------------------
+  1. Stretch A (keep D - it is cheapest).
+  2. Fancy framing check (keep blur + dark).
+  3. Upload backend (keep local queue + JSON export as "upload").
+  Never cut: offline no-loss, eval numbers, disconnect recovery.

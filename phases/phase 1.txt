@@ -1,0 +1,159 @@
+PHASE 1 - CAPTURE YOUR OWN DATA
+===============================
+Time: ~1.5 hours (Hour 2-4)
+
+
+1. OBJECTIVE
+------------
+Build a real, labelled image set from your own home, early. Two later
+phases depend on it:
+  - Phase 4 picks blur/dark/framing thresholds FROM these frames.
+  - Phase 7 measures extraction accuracy ON these frames.
+End this phase with 50+ frames on disk and a labels.csv holding the
+correct answer for every frame, written by hand.
+
+The brief is strict: no fake data, no people in frame, only property
+you have permission to film. Accuracy numbers with no test set behind
+them end the process.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Where nameplates are on household appliances: water heater /
+    geyser, fridge (inside door or back), washing machine (door rim or
+    back), AC indoor + outdoor unit, microwave (back/side), inverter /
+    UPS, TV back, router, chimney, water purifier, motor pump.
+  - What fields a nameplate shows: make, model, serial, manufacture
+    date (often hidden inside the serial number - note it).
+  - How to make realistic bad frames on purpose:
+      dark   -> lights off, dark cupboard, under sink, phone exposure
+                locked low
+      blur   -> move the phone while shooting, shoot from a walk
+      angle  -> 45 degrees to the plate, glare from a torch on metal
+      frame  -> nameplate half out of frame, too far away
+  - Train/test honesty: thresholds tuned on the same frames you report
+    accuracy on look better than they are. Split the set.
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Not enough nameplates at home -> aim for variety in conditions
+    (each plate shot 4 ways) rather than 40 different appliances.
+  - Real water damage may not exist at home -> use real marks, stains,
+    cracks, peeling paint, or a harmless staged wet patch (water on
+    cardboard / a wall corner you dry after). Label staged ones as
+    staged; never pretend.
+  - Ground truth must be correct, or every accuracy number is wrong.
+    Read the plates in person, not off the photo.
+  - Privacy: mirrors, windows, family photos, people. EXIF GPS in
+    photos.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+Shot list (target 55-60 frames, minimum 40 after rejects):
+
+  Category                          Count   Notes
+  --------------------------------  -----   ---------------------------
+  Nameplate, good light               12    one per appliance if you can
+  Nameplate, low light                 6    same plates, lights off
+  Nameplate, blurry / motion           4
+  Nameplate, angled / glare            4
+  Damage - wall                        8    tape-measure each
+  Damage - ceiling                     4    tape-measure each
+  Damage, low light                    4    dark cupboard / under sink
+  Badly framed (any type)              4
+  Empty / nothing useful               3    tests the quality gate
+  --------------------------------  -----
+  Total                               ~49+  low light total = 10+
+
+File naming:  <type>_<id>_<condition>.jpg
+  e.g.  np_03_dark.jpg, dmg_wall_02_good.jpg, dmg_ceil_01_blur.jpg
+
+labels.csv columns:
+  file, split, type, condition, lighting, is_blurry, is_framed_ok,
+  make, model, serial, mfg_date, room, surface, damage_type,
+  true_width_cm, true_height_cm, staged, notes
+
+  split = "tune" (about 1/3, used for thresholds) or "eval" (rest,
+  used only for reporting accuracy).
+
+Also record:
+  - 3 short walk-through videos (1-2 min each), different rooms, to
+    feed the Mock Device Kit and to produce the 3 sample job records
+    in Phase 9.
+
+
+5. STEPS
+--------
+Step 1 - Plan the walk (10 min)
+  - List every appliance with a readable plate, and every wall /
+    ceiling mark. Write the list in data/shotlist.md.
+
+Step 2 - Read ground truth in person (15 min)
+  - For each plate, write make, model, serial, mfg date directly into
+    labels.csv while standing in front of it.
+  - For each damage area, tape-measure width x height in cm, note
+    room, surface, damage type (stain, crack, peeling, mould, hole).
+
+Step 3 - Shoot (40 min)
+  - Use the phone camera, then downscale every frame to the glasses
+    stream size (DAT HIGH = 720x1280 portrait) so the test set looks
+    like what the glasses deliver. Keep the originals too.
+  - Hold the phone at eye height, like a head-mounted camera, not
+    close-up macro shots. This matters - glasses see from the head.
+  - Follow the shot list. Do the dark and blurry versions right after
+    the good one so the scene is identical.
+  - Put a credit card or A4 sheet next to some damage areas (needed
+    for stretch A, size estimation).
+
+Step 4 - Record walk-through videos (10 min)
+  - 3 videos, walk naturally, stop at plates and damage like a tech.
+  - Mock Device Kit only accepts H.265 video. Convert each:
+      ffmpeg -i walk1.mov -c:v hevc_videotoolbox -tag:v hvc1 -an \
+             -vf "scale=540:960" walk1.mp4
+  - For automated mock runs, the feed must be bundled as an app asset
+    (android/app/src/debug/assets/walk1.mp4).
+  - Live demos can instead use the phone camera directly as the mock
+    feed (setCameraFeed with the phone camera).
+
+Step 5 - Clean up (15 min)
+  - Copy to data/raw/. Rename to the naming scheme.
+  - Strip EXIF GPS:  exiftool -gps:all= -overwrite_original data/raw/*
+    (or any tool that removes location).
+  - Look through every frame: no people, faces, reflections, or
+    personal documents. Delete any that have them.
+  - Fill the split column: pick every 3rd frame of each category as
+    "tune", rest "eval".
+
+Step 6 - Commit
+  - Frames are small enough for git (or use Git LFS if >50 MB total).
+  - "phase 1: own test set, N frames, labels.csv"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] 50+ frames in data/raw/ (40+ minimum after rejects).
+  [ ] 10+ nameplate frames, 10+ low-light frames (count them).
+  [ ] Every frame has a row in labels.csv, every row has a split.
+  [ ] Every damage frame has a tape-measured size.
+  [ ] No GPS in EXIF, no people in any frame.
+  [ ] 3 walk-through videos recorded.
+
+
+7. OUTPUT
+---------
+  - data/raw/*.jpg
+  - data/labels.csv
+  - data/shotlist.md
+  - data/videos/ (or kept out of git if too large; note where)
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Shooting only good frames -> the quality gate cannot be tuned.
+  - Reading serial numbers off the photo for ground truth -> if the
+    photo is blurry your "truth" is a guess.
+  - Close-up macro shots of plates -> unrealistic for glasses.
+  - Forgetting to split -> thresholds and accuracy measured on the
+    same frames.

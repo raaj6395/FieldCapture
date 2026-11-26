@@ -1,0 +1,165 @@
+PHASE 9 - DELIVERABLES
+======================
+Time: ~2 hours (Hour 20-22)
+
+
+1. OBJECTIVE
+------------
+Package the work so a reviewer can verify every claim in minutes:
+  - README (setup < 10 min, one architecture diagram, 2-week plan,
+    tools used, model choice + cost, assumptions, limitations, cuts)
+  - Research memo (one page, own findings, hardware recommendation)
+  - Eval report (done in Phase 7/8 - polish only)
+  - 3 sample JSON job records from real walk-throughs
+  - Demo video <= 5 min, from the submitted build, with a caught
+    failure + recovery
+  - Clean git history (commits per phase already exist)
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - How the graders read: honesty > size. A flagged limitation costs
+    nothing; one they find costs a lot.
+  - Diagram in plain text or Mermaid (renders on GitHub).
+  - Screen recording on Mac (QuickTime / Cmd+Shift+5) + phone screen
+    mirroring (scrcpy for Android) so the phone UI and logs are both
+    visible.
+  - What makes a memo "own findings" vs "restating docs": numbers
+    from our eval, behaviour we observed in the mock, things the docs
+    did not say.
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - "Setup in under 10 minutes on a clean machine" is easy to claim,
+    hard to achieve (SDK token, Android Studio, Python env, API key).
+    Must be tested on a fresh clone.
+  - Demo footage MUST come from the submitted build (process-ending
+    rule). Record AFTER the final code commit, then do not change code
+    (or re-record).
+  - Five minutes is short. Needs a script.
+  - Memo is ONE page. Every sentence must earn its place.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+A) README.md outline
+   1. What it is (3 lines)
+   2. Demo video link
+   3. Setup (< 10 min):
+        prerequisites (Android Studio, JDK 17, Python 3.11, phone)
+        backend: cp .env.example .env -> add API key ->
+                 pip install -r requirements.txt -> run
+        android: open in Android Studio -> run on phone -> set backend
+                 URL. DAT comes from Maven Central (no token);
+                 Developer Mode placeholders are "0" (no Developer
+                 Center app needed for the mock).
+        mock device: debug build auto-pairs a mock Ray-Ban Meta; how
+                 to switch feed (phone camera vs bundled HEVC video)
+                 and speech source (live phone mic vs injected)
+   4. Architecture (ONE diagram):
+
+        Mock glasses (DAT Mock Device Kit)
+              | camera frames
+              v
+        Android app ---------------------------------------------+
+          VoiceListener -> CommandParser -> CommandHandler        |
+          SessionManager (state machine, reconnect, foreground)   |
+          QualityChecker (blur/dark/glare/framing, burst+retake)  |
+          Room queue + WorkManager (save first, upload later)     |
+              | HTTPS when online                                 |
+              v                                                   |
+        Backend (FastAPI)                                         |
+          /captures (idempotent) -> extract.py -> vision model    |
+          /jobs/{id}/finalize -> mapping.py -> job_record.json    |
+
+   5. Voice commands (table) + phone-mic fallback reason
+   6. Quality thresholds (table, how picked, false-reject/accept)
+   7. Extraction: model, why, cost per job, confidence method
+   8. Job record schema + line-item catalog (links)
+   9. Offline behaviour (how lossless is guaranteed)
+  10. Results summary (key numbers, link to eval/REPORT.md)
+  11. Assumptions
+  12. Known limitations (what does not work / untested on hardware)
+  13. What we cut and why
+  14. Two more weeks
+  15. AI tools used and where (Claude Code for X, Meta SDK skill for
+      Y, etc.)
+  16. Spend (receipts total, <= $50)
+
+B) RESEARCH_MEMO.md (one page, 4 sections)
+   1. What today's Meta glasses can do for field estimation
+      (hands-free capture, voice, good-light nameplate OCR at X%)
+   2. What they cannot (no depth -> size error Y%, low light accuracy
+      drops to Z%, no on-glasses compute for quality, battery/heat
+      unknown, glasses audio not available via SDK, etc.)
+   3. SDK findings the docs leave out (from docs/SDK_NOTES.md - real
+      gotchas we hit, with specifics)
+   4. First hardware change + evidence:
+      e.g. "Add a forward work light co-aimed with the camera:
+      nameplate accuracy fell from A% (good light) to B% (low light,
+      n=..) and C% of retakes were 'too dark'." Pick whatever the
+      eval actually shows - numbers decide the recommendation.
+
+C) samples/
+   - Do 3 real walk-throughs (different rooms/appliances) with the
+     final build. At least one done fully offline then synced.
+   - Copy the 3 job records as samples/job_1.json ... job_3.json.
+   - Validate all 3 against the schema.
+
+D) Demo video script (<= 5 min, one continuous walk)
+   0:00-0:20  What it is, show app connected to mock device
+   0:20-0:40  "start job"
+   0:40-1:20  "capture nameplate" at water heater -> "Good."
+   1:20-2:00  dark cupboard capture -> "Too dark. Turn on your light."
+              -> light on -> "retake" -> passes  (CAUGHT FAILURE 1)
+   2:00-2:30  "capture damage kitchen north wall"
+   2:30-2:50  "note: subfloor soft by the cabinet"
+   2:50-3:30  disconnect the mock mid-walk -> "Glasses disconnected"
+              -> reconnect -> same job continues  (FAILURE 2)
+   3:30-4:00  airplane mode, 1 capture, airplane off -> queue drains
+   4:00-4:30  "end job" -> show the generated job record JSON +
+              line items
+   4:30-5:00  Key numbers from the eval report
+
+
+5. STEPS
+--------
+  1. Write README + memo (50 min).
+  2. Fresh-clone test (15 min): clone into a new folder, follow the
+     README exactly, time it. Fix every step that was missing.
+  3. Final code commit + tag (v1.0).
+  4. Record 3 sample walk-throughs -> samples/ (20 min).
+  5. Record the demo video from that tagged build (20 min incl.
+     retakes). Upload (unlisted YouTube / Drive), link in README.
+  6. Tick the final checklist in requirement.txt.
+  7. Commit docs. Push. Submit repo + video link.
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Fresh clone -> running app + backend in < 10 min (timed).
+  [ ] README has ONE architecture diagram and every section above.
+  [ ] Memo fits on one page and has numbers from our own eval.
+  [ ] 3 sample job records validate against the schema.
+  [ ] Video <= 5 min, from the tagged build, shows at least one caught
+      failure + recovery.
+  [ ] Every number in README / memo traces to eval/REPORT.md.
+  [ ] No secrets in the repo (grep for keys before pushing).
+  [ ] Spend total written, receipts saved.
+
+
+7. OUTPUT
+---------
+  - README.md, RESEARCH_MEMO.md, eval/REPORT.md (final)
+  - samples/job_1.json, job_2.json, job_3.json
+  - Demo video link
+  - Tagged final commit, pushed
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Changing code after recording the demo.
+  - Memo that restates Meta's marketing / docs (earns nothing).
+  - Hiding limitations. List them.
+  - README setup that only works on your machine.

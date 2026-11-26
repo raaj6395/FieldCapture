@@ -1,0 +1,238 @@
+PHASE 0 - SDK RECON AND PROJECT SETUP
+=====================================
+Time: ~2 hours (Hour 0-2)
+
+
+1. OBJECTIVE
+------------
+Before writing any feature code, know exactly what Meta's Wearables
+Device Access Toolkit (DAT) and its Mock Device Kit can and cannot
+do. End this phase with:
+  - a running Android app that talks to a mock glasses device,
+  - a repo skeleton every later phase plugs into,
+  - written answers to the questions that decide the design
+    (audio path, lifecycle events, disconnect behaviour).
+
+
+2. WHAT WE ALREADY KNOW (VERIFIED)
+----------------------------------
+Source: Meta's official Claude Code plugin "mwdat-android" v1.1.0
+(installed, user scope) - its skills, CHANGELOG and sample apps.
+Read on 2026-11-26. Local copy:
+  ~/.claude/plugins/marketplaces/mwdat-android-marketplace/
+    samples/CameraAccess   <- simplest sample, start here
+    samples/BirdSpotter    <- closest to our app (camera + speech +
+                              inputs + mock control panel)
+    CHANGELOG.md, AGENTS.md
+
+Installed skills (use them while coding - they hold exact API names):
+  getting-started, dat-conventions, permissions-registration,
+  session-lifecycle, camera-streaming, camera-capture,
+  audio-streaming, speech, inputs, voice-invocations, motion,
+  mockdevice-testing, mockdevice-mcp, debugging, live-debugging-mcp,
+  dat-docs-mcp, sample-app-guide, display-access
+
+Versions:
+  - 1.0.0 released 2026-09-24, 1.0.1 on 2026-10-09, 1.1.0 on
+    2026-11-20. Brief says "DAT 1.0" -> we use 1.1.0 (same 1.x line,
+    matches the skills and the MockDevice MCP route contract). State
+    this in README.
+
+Distribution:
+  - Maven Central, group com.meta.wearable. NO access token, NO extra
+    repository. Modules: mwdat-core, mwdat-camera, mwdat-mockdevice,
+    mwdat-speech (experimental), mwdat-inputs (experimental),
+    mwdat-display (not needed - Ray-Ban Meta has no display).
+
+Registration / Developer Mode:
+  - Manifest placeholders mwdat_application_id = "0" and
+    mwdat_client_token = "0" in Developer Mode (no attestation).
+  - Real glasses need the Meta AI app + Developer Mode enabled in it.
+  - MockDeviceKit.enable() fakes registration + connectivity
+    (registrationState -> Registered by default). Verify whether the
+    Meta AI app must still be installed for the mock.
+
+Session (DeviceSession):
+  - States: IDLE, STARTING, STARTED, PAUSED, STOPPING, STOPPED.
+  - start/pause/resume/stop are fire-and-forget (return Unit). Watch
+    session.state and session.errors; subscribe BEFORE start().
+  - STOPPED is terminal. A dropped session cannot be restarted ->
+    create a new session for the same job.
+  - Device can pause on its own (cap-touch tap), and the SDK may
+    pause/stop when glasses are removed/folded, BT drops, or another
+    experience takes over.
+  - Add capabilities (camera, speech, inputs) only once, after
+    STARTED. Adding again after PAUSED->STARTED fails
+    CAPABILITY_ALREADY_ADDED.
+
+Camera:
+  - session.addCamera(StreamConfiguration(videoQuality, frameRate)).
+  - Stream sizes: HIGH 720x1280, MEDIUM 504x896, LOW 360x640.
+    FPS: 2, 7, 15, 24, 30. Frames arrive as YUV by default.
+  - camera.stream.capturePhoto() -> PhotoData.Bitmap or PhotoData.HEIC,
+    only while STREAMING, one at a time (CaptureInProgress).
+  - camera.photo = standalone high-quality photo (experimental), must
+    stop the stream first -> too slow for us, skip.
+  - Stream errors: STREAM_ERROR (informational) vs
+    CRITICAL_STREAM_ERROR (tear down).
+
+Audio / voice:
+  - Speech capability (experimental): on-glasses speech recognition,
+    gives partial + final transcriptions with confidence 0-1.
+    Needs Permission.MICROPHONE + enabling in Wearables Developer
+    Center.
+  - In the mock, Speech source is either "injected" (tests send text)
+    or "liveDeviceAsr" (transcribes the PHONE mic with the Android
+    recognizer; needs RECORD_AUDIO). -> Same app code for mock and
+    real glasses; in the mock the sound physically comes from the
+    phone mic. This is our "phone mic fallback" story.
+  - Audio streaming (raw PCM) exists, but the mock does not inject
+    audio frames -> not usable for testing.
+  - Inputs (experimental): glasses capture button, taps, swipes as
+    events. Mock can inject them.
+  - Voice invocations (experimental): "Hey Meta, start <app>" launches
+    the app. Optional.
+  - IMPORTANT finding for the memo: Speech, Inputs, standalone Photo,
+    Voice invocations are experimental -> allowed for dev/beta, cannot
+    be published to production release channels yet.
+
+Device state + mock controls:
+  - Device exposes batteryLevel, chargingState, donState, hingeState,
+    thermalLevel (Wearables.devicesMetadata[id]).
+  - Mock: powerOn/powerOff, unfold/fold, don/doff, setBatteryLevel,
+    setThermalLevel, captouch tap, setCameraFeed(videoUri or phone
+    camera), setCapturedImage, speech/inputs injection.
+  - Mock video must be H.265 (HEVC). Convert:
+      ffmpeg -i in.mp4 -c:v hevc_videotoolbox -tag:v hvc1 -an \
+             -vf "scale=540:960" out.mp4
+  - setCameraFeed(phone camera) needs Android CAMERA permission.
+  - MockDevice MCP server (in the plugin) lets Claude Code drive the
+    mock (pair, power off, doff, set feed) over adb while the app runs
+    with the `mwdat_ui_testing` intent extra -> scripted disconnect
+    tests.
+
+
+3. WHAT WE STILL HAVE TO LEARN (THIS PHASE)
+-------------------------------------------
+  - Does Speech work in Developer Mode without Developer Center
+    approval? (decides DAT Speech vs plain Android SpeechRecognizer)
+  - Does Inputs (capture button) work in Developer Mode?
+  - Is the Meta AI app needed on the phone when only the mock is used?
+  - Resolution of stream.capturePhoto() vs the stream itself.
+  - Exactly which session/stream states fire on mock powerOff, doff,
+    fold (drives the reconnect logic in Phase 2).
+  - Android basics if rusty: Kotlin, Compose (one screen), Gradle,
+    running on a phone over USB.
+
+
+4. THE PROBLEM IN THIS PHASE
+----------------------------
+  - The SDK is young (1.0 is two months old). Docs lag; experimental
+    features may behave differently in Developer Mode.
+  - No real glasses -> every hardware claim must be labelled
+    "mock-only, untested on hardware".
+  - Easy to over-read. Time-box: run the sample first, read second.
+
+
+5. HOW WE BUILD IT (DESIGN)
+---------------------------
+Repo layout:
+
+  FieldCapture/
+    android/              Android app (Kotlin)
+    backend/              Python FastAPI: extraction, job record
+    tools/                Python: quality thresholds, eval
+    data/raw/             our own frames
+    data/labels.csv       hand-written ground truth
+    eval/                 results + REPORT.md
+    samples/              3 real job records
+    docs/SDK_NOTES.md     what the docs did not tell us
+    README.md
+
+Target architecture:
+
+  [Mock glasses] --frames + speech--> [Android app]
+                                        voice cmd -> capture
+                                        quality check (on device)
+                                        save locally + queue
+                                          | when online
+                                          v
+                                      [Backend] --> vision model API
+                                          |
+                                          v
+                                      job record JSON + line items
+
+
+6. STEPS
+--------
+Step 1 - Machine setup
+  - Done separately: follow SETUP.txt (command-line toolchain, no
+    Android Studio). Phase 0 starts when its FINAL CHECK is all true.
+
+Step 2 - Run CameraAccess sample (25 min)
+  - Already done if SETUP.txt Step 9 passed; otherwise
+    ./gradlew installDebug from a copy of samples/CameraAccess.
+  - Debug menu -> Pair RayBan Meta -> PowerOn -> Unfold -> Don ->
+    pick a video/image -> start streaming.
+  - Proves toolchain + phone + mock work before our own code.
+
+Step 3 - Skim BirdSpotter (15 min)
+  - How it wires Speech, Inputs, capture, and the mock control panel.
+  - Note the files worth copying patterns from.
+
+Step 4 - Our app skeleton (30 min)
+  - New project in android/ (Kotlin, Compose, minSdk 31 = Android 12,
+    same as Meta's samples). Easiest: copy CameraAccess's Gradle files
+    (libs.versions.toml, build.gradle.kts, wrapper) and strip it down,
+    since there is no Android Studio "new project" wizard.
+  - Deps: mwdat-core, mwdat-camera, mwdat-mockdevice, mwdat-speech,
+    mwdat-inputs (1.1.0).
+  - Manifest: BLUETOOTH, BLUETOOTH_CONNECT, INTERNET, CAMERA,
+    RECORD_AUDIO, APPLICATION_ID/CLIENT_TOKEN meta-data = "0",
+    URL scheme intent filter.
+  - Application.onCreate: Wearables.initialize(this).
+  - Debug build: MockDeviceKit.enable() + pairGlasses(RAYBAN_META) +
+    powerOn/unfold/don; set camera feed.
+  - One screen: status text (registration, device, session state).
+
+Step 5 - Probe the open questions (25 min)
+  - Try addSpeech with mock source liveDeviceAsr; say a word; does a
+    transcription arrive?
+  - Try addInputs; inject a capture-button event.
+  - Power off / doff / fold the mock while a session runs; log every
+    session.state, stream.state and error.
+  - Write all answers into docs/SDK_NOTES.md (Q1-Q6):
+      Q1 start/pause/resume/stop -> observed states
+      Q2 what fires on powerOff / doff / fold
+      Q3 Speech in Developer Mode: works? (else Android recognizer)
+      Q4 Inputs in Developer Mode: works?
+      Q5 capturePhoto resolution and format (Bitmap vs HEIC)
+      Q6 Meta AI app needed for mock? yes/no
+
+Step 6 - Commit
+  - "phase 0: skeleton on DAT 1.1.0, mock device streams, SDK notes"
+
+
+7. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] CameraAccess sample streams from the mock on your phone.
+  [ ] Our app connects to the mock and shows session STARTED.
+  [ ] Q1-Q6 answered in docs/SDK_NOTES.md with observed facts.
+  [ ] Decision written: DAT Speech or Android SpeechRecognizer.
+  [ ] Repo skeleton committed, no secrets.
+
+
+8. OUTPUT
+---------
+  - Repo skeleton, android/ app connected to the mock.
+  - docs/SDK_NOTES.md (feeds the research memo).
+  - First commit.
+
+
+9. PITFALLS TO AVOID
+--------------------
+  - Calling addCamera right after start() -> SESSION_IDLE. Wait for
+    STARTED.
+  - Reusing a STOPPED session -> always create a new one.
+  - Feeding the mock an H.264 video -> stream start rejected.
+  - Using getOrThrow() -> crashes; use fold/onFailure.

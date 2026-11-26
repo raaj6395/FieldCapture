@@ -1,0 +1,190 @@
+FIELDCAPTURE - SETUP PLAN (do all of this before Phase 0 coding)
+================================================================
+Machine: MacBook, Apple Silicon (arm64), 8 GB RAM, ~44 GB free.
+Choice: Option B - command-line Android toolchain (no Android Studio)
+        to save RAM and disk. Editor: VS Code + Claude Code.
+Total time: ~45-60 min, mostly downloads.
+
+Status key:  [x] done   [ ] to do
+
+
+-----------------------------------------------------------------
+STEP 1 - BASE TOOLS (Homebrew)                         ~10 min
+-----------------------------------------------------------------
+[x] JDK 17            brew install openjdk@17
+[x] ffmpeg            brew install ffmpeg          (HEVC for the mock)
+[x] adb               brew install --cask android-platform-tools
+[x] Android cmdline   brew install --cask android-commandlinetools
+[x] Python 3.12       brew install python@3.12     (system has 3.9.6;
+                                                    backend needs 3.11+)
+[x] exiftool          brew install exiftool        (strip GPS, Phase 1)
+[x] scrcpy            brew install scrcpy          (mirror phone screen
+                                                    for demo video)
+[x] gh (optional)     brew install gh              (create GitHub repo
+                                                    from terminal)
+
+  One line for the rest:
+    brew install python@3.12 exiftool scrcpy gh
+
+
+-----------------------------------------------------------------
+STEP 2 - SHELL ENVIRONMENT (you run this)              ~2 min
+-----------------------------------------------------------------
+[x] Project-local instead: ~/Cozmo_Assingment/env.sh holds the three
+    exports. Run `source env.sh` in any new terminal before building.
+[ ] (Optional) make it permanent - add to ~/.zshrc:
+
+    cat >> ~/.zshrc <<'EOF'
+
+    export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+    export ANDROID_HOME=/opt/homebrew/share/android-commandlinetools
+    export PATH="$JAVA_HOME/bin:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
+    EOF
+    source ~/.zshrc
+
+  Check:
+    java -version          -> openjdk version "17..."
+    echo $ANDROID_HOME     -> /opt/homebrew/share/android-commandlinetools
+    sdkmanager --version   -> prints a version
+
+
+-----------------------------------------------------------------
+STEP 3 - ANDROID SDK PACKAGES (you accept licenses)    ~10 min
+-----------------------------------------------------------------
+Versions match Meta's CameraAccess sample (compileSdk 36, AGP
+8.11.1, Gradle 8.14.1, Kotlin 2.2.21).
+
+[x] sdkmanager --licenses                  (read, press y for each)
+[x] sdkmanager "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+
+  Gradle itself is NOT installed - every project's ./gradlew wrapper
+  downloads Gradle 8.14.1 on first build (~150 MB, one time).
+
+  [x] Low-RAM tip (8 GB): put this in ~/.gradle/gradle.properties
+    org.gradle.jvmargs=-Xmx2g
+    org.gradle.daemon=true
+    org.gradle.parallel=false
+    kotlin.daemon.jvmargs=-Xmx1g
+  Close Chrome tabs during builds.
+
+
+-----------------------------------------------------------------
+STEP 4 - ANDROID PHONE                                 ~10 min
+-----------------------------------------------------------------
+[x] Android 12 or newer (sample minSdk = 31).
+    -> Samsung Galaxy S22 (SM-S901E), Android 16 / SDK 36, 8.8 GB free.
+[x] Enable Developer options.
+[x] Developer options > USB debugging ON, this Mac authorized.
+    (Optional) Wireless debugging ON - frees the USB port and lets you
+    walk around while connected:  adb pair <ip:port>  then
+    adb connect <ip:port>
+[ ] Plug in USB, accept the "Allow USB debugging" prompt on the phone.
+[ ] Check:  adb devices   -> shows your phone as "device"
+[x] Meta AI app: NOT needed - verified, MockDeviceKit fakes
+    registration (app went straight to "Ready"). Not needed for
+    real glasses work since we have none.
+[ ] Free space on phone: ~2 GB (app + test photos + videos).
+
+
+-----------------------------------------------------------------
+STEP 5 - PROJECT GIT REPO                              ~5 min
+-----------------------------------------------------------------
+Problem found: your whole home folder (/Users/raaj_ankit_) is a git
+repo, so Cozmo_Assingment is currently just a subfolder of it.
+Reviewers read OUR commit history -> the project needs its own repo.
+
+[x] cd ~/Cozmo_Assingment && git init -b main
+[x] .gitignore: .env, local.properties, *.keystore, build/, .gradle/,
+    .idea/, __pycache__/, .venv/, backend/logs/, receipts/
+[ ] Add "Cozmo_Assingment/" to the HOME repo's .gitignore so the outer
+    repo stops tracking it.
+[ ] Create empty GitHub repo (private for now), e.g. "fieldcapture":
+      gh auth login && gh repo create fieldcapture --private --source=. --remote=origin
+    (or create it on github.com and git remote add origin ...)
+[ ] Decide: keep requirement.txt / Plan.txt / phases/ in the repo
+    (shows planning - fine) or move them to docs/planning/.
+[ ] Commit identity check: git config user.name / user.email
+[ ] Remember: no Co-Authored-By trailer on commits (your preference).
+
+
+-----------------------------------------------------------------
+STEP 6 - PYTHON ENVIRONMENT (backend + tools)          ~5 min
+-----------------------------------------------------------------
+[x] python3.12 -m venv .venv && source .venv/bin/activate
+[x] pip install fastapi uvicorn python-multipart pydantic jsonschema \
+        opencv-python-headless numpy pandas pillow pytest
+    + the SDK of the vision model you pick (anthropic / google-genai /
+      openai) - pick in Phase 5 bake-off.
+[ ] Freeze to backend/requirements.txt once it works.
+
+
+-----------------------------------------------------------------
+STEP 7 - API KEY + BUDGET (Google Cloud Vision)        ~10 min
+-----------------------------------------------------------------
+[ ] console.cloud.google.com -> create project "fieldcapture".
+[ ] Billing: attach a billing account (Vision needs it even for the
+    free tier).
+[ ] APIs & Services -> Library -> enable "Cloud Vision API".
+[ ] APIs & Services -> Credentials -> Create credentials -> API key.
+    Edit it -> API restrictions -> restrict to "Cloud Vision API" only.
+[ ] Billing -> Budgets & alerts -> budget $20 with email alerts
+    (brief caps total spend at $50).
+[ ] Paste into backend/.env:  GOOGLE_CLOUD_VISION_API_KEY=...
+    (git-ignored - NOT env.sh, which is committed)
+[x] backend/.env.example committed with empty values.
+[x] Gemini (AI Studio, free tier) for damage + notes:
+    GEMINI_API_KEY in backend/.env - tested, gemini-2.5-flash OK.
+    (Ollama dropped - no local models.)
+[ ] Start a receipts/ folder (outside git) for invoices.
+
+
+-----------------------------------------------------------------
+STEP 8 - CLAUDE CODE / META PLUGIN                     ~3 min
+-----------------------------------------------------------------
+[x] Plugin mwdat-android@mwdat-android-marketplace v1.1.0 installed
+    (user scope, enabled). Gives 18 DAT skills.
+[ ] It also bundles 2 MCP servers - confirm they show up with /mcp:
+      dat-docs     -> https://mcp.developer.meta.com/wearables
+                      (live docs search, no auth)
+      mockdevice   -> drives the mock glasses over adb (pair, power
+                      off, doff, set feed, inject speech). Needs the app
+                      launched with:  --ez mwdat_ui_testing true
+[ ] VS Code extensions (light): Kotlin (fwcd.kotlin) - optional;
+    Python (ms-python.python).
+
+
+-----------------------------------------------------------------
+STEP 9 - SMOKE TEST: BUILD META'S SAMPLE               ~10 min
+-----------------------------------------------------------------
+Proves the whole toolchain before we write our own code.
+
+[x] cp -R ~/.claude/plugins/marketplaces/mwdat-android-marketplace/samples/CameraAccess /tmp/CameraAccess
+[x] cd /tmp/CameraAccess && ./gradlew installDebug
+    (first build is slow: Gradle + dependencies download) -> 4m11s
+[x] Open "CameraAccess" on the phone -> Debug icon -> Pair RayBan
+    Meta -> PowerOn -> Unfold -> Don -> pick phone camera / a video ->
+    start streaming -> you see frames.  -> streamed back camera,
+    photo capture worked, no Meta AI app needed.
+[ ] Logs:  adb logcat | grep -i DATWearables
+
+
+-----------------------------------------------------------------
+STEP 10 - THINGS TO HAVE ON THE DESK (Phase 1 filming)
+-----------------------------------------------------------------
+[ ] Tape measure (for damage sizes - stretch A)
+[ ] Credit card / A4 sheet (size reference)
+[ ] Torch / phone flashlight (glare + "turn on light" retake)
+[ ] List of appliances with nameplates you can film (10+ plates)
+[ ] Permission to film any space that is not yours. No people.
+
+
+-----------------------------------------------------------------
+FINAL CHECK - READY FOR PHASE 0 WHEN ALL TRUE
+-----------------------------------------------------------------
+[ ] java -version shows 17
+[ ] adb devices shows the phone
+[ ] CameraAccess sample streams mock frames on the phone
+[ ] ~/Cozmo_Assingment is its own git repo with a GitHub remote
+[ ] .venv works with python 3.12
+[ ] API key in backend/.env, spend limit set
+[ ] /mcp shows the dat-docs and mockdevice servers

@@ -1,0 +1,206 @@
+PHASE 6 - JOB RECORD, LINE ITEMS, OFFLINE QUEUE
+===============================================
+Time: ~2.5 hours (Hour 14-16)
+
+
+1. OBJECTIVE
+------------
+Core requirements 5 and 7.
+  a) One JSON job record per walk-through, against a schema we design.
+  b) Our own catalog of 10-15 line-item codes, and rules that map what
+     was observed to a draft list of line items with quantities.
+  c) Bad connectivity: every capture is saved on the phone first,
+     queued, and uploaded when signal returns. Nothing is lost, nothing
+     is duplicated - even if the app is killed or the phone restarts.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Water-damage restoration estimating basics: what work follows
+    from what you see (wet drywall -> cut out and replace; stained
+    ceiling -> seal and paint; soft subfloor -> replace; drying
+    equipment billed per day). Units: sq ft, linear ft, each, day.
+  - JSON Schema (draft 2020-12) to describe and validate the record.
+  - Android Room (SQLite) for the local queue, transactions.
+  - Android WorkManager: unique work, network constraint, exponential
+    backoff, survives reboot.
+  - Idempotent uploads: the server accepts the same capture twice and
+    stores it once (capture_id as the key).
+  - FastAPI file upload (multipart).
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - An attic or basement has no signal for the whole walk. The job is
+    "done" on the phone long before anything reaches the server.
+  - App can die between "photo taken" and "uploaded". If the photo is
+    only in memory, it is lost.
+  - Retries after a timeout can create duplicates unless the server
+    is idempotent.
+  - Line items from low-confidence extractions must not look final.
+    The back office must see what needs review.
+  - Quantities need a size; size from one image is rough. Must be
+    marked as estimated.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+A) LINE-ITEM CATALOG (backend/line_items.json) - 13 codes:
+
+  Code       Description                                     Unit
+  ---------  ----------------------------------------------  -----
+  DRY-RR     Remove and replace drywall                      sq ft
+  DRY-PATCH  Patch drywall (small area < 2 sq ft)            each
+  CLG-RR     Remove and replace ceiling drywall              sq ft
+  PNT-WALL   Seal (stain-block) and paint wall               sq ft
+  PNT-CLG    Seal and paint ceiling                          sq ft
+  BASE-RR    Remove and replace baseboard                    lin ft
+  SUBF-RR    Remove and replace subfloor                     sq ft
+  INS-RR     Remove and replace insulation                   sq ft
+  MOLD-TRT   Antimicrobial / mould treatment                 sq ft
+  DRY-EQ     Dehumidifier + air mover, per day               day
+  CAB-DR     Detach and reset cabinet                        each
+  WH-RPL     Replace water heater                            each
+  INSP-REV   Needs human review (unclear observation)        each
+
+B) MAPPING RULES (backend/mapping.py) - plain ordered rules:
+
+  damage on wall:
+    water stain, small        -> PNT-WALL (area)
+    water stain, large/soft   -> DRY-RR (area) + PNT-WALL (area)
+                                 + BASE-RR (width) + DRY-EQ (3 days)
+    mould                     -> MOLD-TRT (area) + DRY-RR (area)
+    hole / crack, < 2 sq ft   -> DRY-PATCH (1) + PNT-WALL (area)
+  damage on ceiling:
+    water stain               -> PNT-CLG (area); if large -> CLG-RR
+                                 + INS-RR (area)
+  note mentions subfloor soft -> SUBF-RR (default 10 sq ft, flagged
+                                 "qty estimated") + DRY-EQ
+  note mentions cabinet       -> CAB-DR (1)
+  nameplate, water heater,
+    age > 10 yrs (from date)  -> WH-RPL (1), status "suggested"
+  anything with confidence < 0.5 or damage type unknown
+                              -> INSP-REV, linked to the capture
+
+  Each line item:
+    { code, description, unit, qty, qty_basis ("measured" | "estimated"
+      | "default"), source_capture_ids[], confidence (min of inputs),
+      status ("draft" | "needs_review") }
+
+C) JOB RECORD SCHEMA (backend/schema/job_record.schema.json):
+
+  {
+    "schema_version": "1.0",
+    "job_id": "uuid",
+    "tech_id": "string",
+    "status": "complete" | "partial",
+    "started_at", "ended_at": ISO-8601,
+    "device": { "type": "mock" | "glasses", "sdk_version": "..." },
+    "session_events": [ { "type": "start|pause|resume|disconnect|
+                          reconnect|stop", "at": ISO-8601 } ],
+    "captures": [ {
+        "capture_id", "type": "nameplate" | "damage",
+        "taken_at", "photo": "relative path or URL",
+        "voice_command": "raw text",
+        "quality": { "passed", "flag": "ok|low", "attempts",
+                     "scores": {...}, "failed_checks": [...] },
+        "fields": { "<name>": { value, confidence, raw_text } }
+    } ],
+    "notes": [ { "note_id", "taken_at", "text",
+                 "fields": { location, issue, material, severity,
+                             action } } ],
+    "line_items": [ ...as above... ],
+    "summary": { "captures": n, "low_quality": n,
+                 "needs_review": n, "upload_delay_s_max": n }
+  }
+
+D) OFFLINE QUEUE (Android):
+
+  Order on every capture (this order is what makes it lossless):
+    1. Write JPEG to app files dir, flush + close.
+    2. Insert row in Room table `captures` with status PENDING
+       (capture_id UUID, job_id, type, args, quality json, photo path,
+       created_at, attempts).
+    3. Speak the reply to the tech.
+    4. Enqueue WorkManager unique work "upload" with
+       NetworkType.CONNECTED constraint, exponential backoff.
+
+  Worker:
+    - Takes PENDING rows oldest first, POSTs each to backend
+      /captures (multipart: photo + metadata incl. capture_id).
+    - 200/201/409(already exists) -> mark UPLOADED. Other errors ->
+      leave PENDING, attempts++, retry later.
+    - Notes are uploaded the same way (no photo).
+    - After "end job": when all rows for that job are UPLOADED ->
+      POST /jobs/{id}/finalize.
+
+  Backend:
+    - POST /captures: if capture_id exists -> return 409/200, do
+      nothing. Else store photo, run extraction (Phase 5), store
+      result.
+    - POST /jobs/{id}/finalize: build job record, run mapping,
+      validate against schema, write jobs/<job_id>.json.
+    - Finalize before all captures arrived -> status "partial", list
+      missing capture_ids; re-finalizing later updates it.
+
+  Storage: plain files on the backend (jobs/, photos/). No database
+  server. (ponytail: files are enough for one tech; a real DB if many
+  techs upload concurrently.)
+
+
+5. STEPS
+--------
+Step 1 - Catalog + schema files (25 min)
+  - Write line_items.json and job_record.schema.json as above.
+
+Step 2 - Mapping + tests (35 min)
+  - Implement mapping rules as an ordered list of small functions.
+  - Unit tests: 4-5 observation sets -> expected line items
+    (incl. a low-confidence one -> INSP-REV, status needs_review).
+
+Step 3 - Backend endpoints (30 min)
+  - POST /captures (idempotent), POST /notes, POST /jobs/{id}/finalize.
+  - Finalize validates the output with jsonschema before writing.
+
+Step 4 - Android Room + worker (45 min)
+  - Room entity + DAO, the 4-step save order, WorkManager worker.
+  - Small "Queue: 3 pending" line on the status screen (and in the
+    notification) - glanceable, not required.
+
+Step 5 - Offline drill (15 min)
+  - Run the full offline test below on the phone. Fix until it passes.
+
+Step 6 - Commit
+  - "phase 6: job record schema, 13 line items, lossless offline queue"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Schema test: a generated job record validates against the schema.
+  [ ] Mapping tests pass (incl. needs_review case).
+  [ ] Idempotency test: POST the same capture 3x -> stored once.
+  [ ] Offline drill:
+        airplane mode on -> start job -> 3 captures + 2 notes ->
+        force-stop app -> reopen -> 1 more capture -> end job ->
+        airplane mode off -> within ~1 min all 6 items uploaded,
+        job record written, no item missing, no duplicates.
+  [ ] Partial job: finalize with a missing capture -> status
+      "partial", missing ids listed; after upload -> "complete".
+
+
+7. OUTPUT
+---------
+  - backend/line_items.json, backend/schema/job_record.schema.json
+  - backend/mapping.py (+ tests), backend endpoints
+  - Android Room queue + upload worker
+  - First real job record JSON in jobs/
+  - Commit
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Speaking "captured" before the file and DB row are saved.
+  - Using a non-unique WorkManager job -> parallel workers upload the
+    same row twice.
+  - Line items without source_capture_ids (back office cannot check).
+  - Pretending quantities are exact. Always set qty_basis.

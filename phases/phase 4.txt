@@ -1,0 +1,169 @@
+PHASE 4 - CAPTURE QUALITY CHECK
+===============================
+Time: ~2 hours (Hour 9-11)
+
+
+1. OBJECTIVE
+------------
+Core requirement 3. Right after each capture, ON THE PHONE (no
+network needed), decide if the frame is usable:
+  - blurry?
+  - too dark?
+  - badly framed (subject cut off / nothing in view)?
+  - (bonus, very common on metal plates) glare / overexposed?
+If not usable, ask for a retake BEFORE the tech walks away, with a
+prompt that tells them exactly what to fix.
+
+Thresholds must be MEASURED on our own frames, with numbers, and we
+must explain how we picked them. Prompts must be ones a tech would not
+want to switch off: rare false alarms, never blocking.
+
+
+2. WHAT WE HAVE TO LEARN
+------------------------
+  - Blur: variance of the Laplacian on a grayscale image. Sharp images
+    have strong edges -> high variance. Blurry -> low. Depends on
+    image size, so always downscale to a fixed width first.
+  - Dark: mean luminance (0-255), plus % of near-black pixels (<20).
+  - Glare: % of clipped pixels (>250) inside the frame centre.
+  - Framing (simple heuristics, no ML):
+      * edge density in the centre region vs the border region;
+        a nameplate cut off has strong edges touching the border,
+      * total edge density too low -> nothing in frame (wall far away
+        / pointed at the floor).
+  - Picking a threshold from data:
+      score every "tune" frame, look at good vs bad distributions,
+      choose the cut with the fewest false rejects that still catches
+      most bad frames. A small table / histogram is enough.
+  - Python: OpenCV (cv2.Laplacian, cv2.cvtColor). Kotlin: do the same
+    maths by hand on a downscaled grayscale Bitmap (a 3x3 kernel loop
+    is ~20 lines; no OpenCV dependency needed on Android).
+
+
+3. THE PROBLEM IN THIS PHASE
+----------------------------
+  - Fixed textbook thresholds do not work; values depend on camera,
+    resolution and scene. Must be measured.
+  - Plain walls are naturally low-texture -> a blur check tuned for
+    nameplates would reject every sharp wall photo. Need per-type
+    thresholds (nameplate vs damage).
+  - Moving camera: a single grabbed frame is often blurry even when
+    the tech is "holding still". Better to pick the best of several.
+  - Fussy apps get turned off. Too many retake prompts = failure.
+  - Python (tuning) and Kotlin (device) must compute the same score,
+    or tuned thresholds are meaningless on the phone.
+
+
+4. HOW WE BUILD IT (DESIGN)
+---------------------------
+Metrics (both Python and Kotlin, identical steps):
+  1. Resize to 360 px wide, keep aspect (DAT stream is 720x1280 HIGH,
+     504x896 MEDIUM, 360x640 LOW - 360 wide works for every quality,
+     and is cheap on the phone).
+  2. Grayscale: Y = 0.299 R + 0.587 G + 0.114 B.
+     On the phone, DAT stream frames are already YUV -> use the Y
+     plane directly (no RGB conversion). Python converts JPEG -> Y with
+     the same formula. The parity test (Step 4) catches any gap.
+  3. blur_score   = variance of 3x3 Laplacian [0 1 0; 1 -4 1; 0 1 0]
+  4. brightness   = mean(Y);  dark_frac = share of pixels with Y < 20
+  5. glare_frac   = share of pixels with Y > 250 in centre 60% box
+  6. edge map     = |Laplacian| > E; border_edge_frac = share of edge
+                    pixels in the outer 8% band; edge_density = edges /
+                    total pixels
+
+Decision (per capture type: nameplate / damage):
+  too_dark  if brightness < T_dark  or dark_frac > T_darkfrac
+  blurry    if blur_score < T_blur[type]
+  glare     if glare_frac > T_glare           (nameplate only)
+  framing   if edge_density < T_empty  or border_edge_frac > T_border
+
+Thresholds come from data/labels.csv "tune" split ONLY (Phase 1).
+
+Capture flow (burst + retry, never block):
+  1. On "capture ...": score the last 5 frames from the stream ring
+     buffer (Phase 2) plus the stream.capturePhoto() still.
+  2. Score all 5, keep the best one (highest blur_score that passes
+     dark/framing).
+  3. Passes -> save, reply "Nameplate. Good."
+  4. Fails -> one specific prompt, then auto-capture again when the
+     tech says "retake" OR after 2 s:
+        dark    -> "Too dark. Turn on your light."
+        blurry  -> "Blurry. Hold still."
+        glare   -> "Glare. Tilt a little."
+        framing -> "Cut off. Step back." / "Nothing in view."
+  5. Max 2 retakes. Then save the best attempt anyway with
+     quality_flag = "low" (back office sees it; tech is never stuck).
+
+Store per capture: all scores, which checks failed, attempts count.
+These go into the job record and power the Phase 7 analysis
+("accuracy on frames the gate accepted vs rejected").
+
+
+5. STEPS
+--------
+Step 1 - Python scoring script (30 min)
+  - tools/quality.py: score(image_path) -> dict of metrics, exactly as
+    above.
+  - tools/tune_thresholds.py: runs score() on every "tune" frame,
+    joins with labels (is_blurry, lighting, is_framed_ok), prints:
+      metric | good frames min/median/max | bad frames min/median/max
+    and for candidate cuts: false-reject %, false-accept %.
+
+Step 2 - Pick thresholds (20 min)
+  - Rule: false-reject rate <= 10% on good frames (do not annoy),
+    then catch as many bad frames as possible.
+  - Separate blur thresholds for nameplate and damage.
+  - Save to one file: tools/thresholds.json (also copied into the
+    Android assets so both sides use the same numbers).
+  - Write a "Quality thresholds" section in docs (table + one
+    sentence of reasoning per threshold).
+
+Step 3 - Kotlin QualityChecker (30 min)
+  - Same 6 steps, reads thresholds.json from assets.
+  - Returns { passed, reasons[], scores{} }.
+
+Step 4 - Parity check (10 min)
+  - Run 5 images through both Python and Kotlin (a JVM unit test can
+    load the same JPEGs). Scores must match within ~2%.
+
+Step 5 - Burst + retake flow (20 min)
+  - Plug into the capture handler from Phase 3.
+  - Implement the prompts and the 2-retake cap.
+
+Step 6 - Validate on "eval" frames (10 min)
+  - Run tune_thresholds.py on the eval split (no re-tuning!) and
+    record false-reject / false-accept there. These are the honest
+    numbers for the README.
+
+Step 7 - Commit
+  - "phase 4: on-device quality gate, thresholds from N tune frames"
+
+
+6. TEST OBJECTIVE (DONE WHEN)
+-----------------------------
+  [ ] Threshold table with real numbers: distributions, chosen cut,
+      false-reject and false-accept rates on tune AND eval split.
+  [ ] Python vs Kotlin scores match within ~2% on 5 shared images.
+  [ ] On phone: blurry capture -> "Blurry. Hold still."
+  [ ] On phone: dark cupboard -> "Too dark. Turn on your light."
+  [ ] On phone: half-framed nameplate -> "Cut off. Step back."
+  [ ] After 2 failed retakes the capture is saved with quality_flag
+      "low" and the tech can continue.
+  [ ] Measured: how often a good frame got a retake prompt in a
+      normal walk (target: rare).
+
+
+7. OUTPUT
+---------
+  - tools/quality.py, tools/tune_thresholds.py, tools/thresholds.json
+  - Android QualityChecker + burst/retake flow + parity test
+  - Thresholds section with numbers (goes into README / eval report)
+  - Commit
+
+
+8. PITFALLS TO AVOID
+--------------------
+  - Tuning thresholds on the eval frames (leakage, inflated numbers).
+  - One blur threshold for walls and nameplates.
+  - Different resize/grayscale steps in Python and Kotlin.
+  - Infinite retake loops. Always cap and move on.
