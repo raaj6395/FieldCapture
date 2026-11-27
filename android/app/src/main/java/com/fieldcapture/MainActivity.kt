@@ -62,15 +62,15 @@ class MainActivity : ComponentActivity() {
 
   private val datPerm =
       registerForActivityResult(Wearables.RequestPermissionContract()) { result ->
-        result.onSuccess { js.log("DAT permission: $it"); if (it == PermissionStatus.Granted) startJob() }
+        result.onSuccess { js.log("DAT permission: $it"); if (it == PermissionStatus.Granted) startJob(asked = true) }
             .onFailure { e, _ -> js.log("DAT permission FAILED: ${e.description}") }
       }
 
-  private fun startJob() {
+  private fun startJob(asked: Boolean = false) {
     lifecycleScope.launch {
       for (p in listOf(Permission.CAMERA, Permission.MICROPHONE)) {
         val status = Wearables.checkPermissionStatus(p).getOrNull()
-        if (status != PermissionStatus.Granted) {
+        if (status != PermissionStatus.Granted && !asked) {
           js.log("DAT $p is $status - requesting")
           return@launch datPerm.launch(p)
         }
@@ -86,7 +86,7 @@ class MainActivity : ComponentActivity() {
       FieldTheme {
         Box(Modifier.fillMaxSize().background(Fc.bg)) {
           var review by rememberSaveable { mutableStateOf<String?>(null) }
-          review?.let { id -> BackHandler { review = null }; ReviewScreen(id) { review = null } } ?: JobScreen(js, ::startJob) { review = it }
+          review?.let { id -> BackHandler { review = null }; ReviewScreen(id) { review = null } } ?: JobScreen(js, { startJob() }) { review = it }
         }
       }
     }
