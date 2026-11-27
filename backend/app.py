@@ -132,7 +132,10 @@ def run_extraction(d, cid, m, photo_path):
         write_json(path, rec)
 
 
-async def wait_extractions(job, ids, limit_s=90):
+FINALIZE_WAIT_S = 90
+
+
+async def wait_extractions(job, ids, limit_s):
     d = STORE / "jobs" / job
     files = [f for i in ids for f in (d / "captures" / f"{i}.json", d / "notes" / f"{i}.json") if f.exists()]
     for _ in range(limit_s * 2):
@@ -226,7 +229,9 @@ def build_record(job, body):
 
 @app.post("/jobs/{job_id}/finalize")
 async def finalize(job_id: str, body: dict):
-    await wait_extractions(safe(job_id), body.get("capture_ids", []) + body.get("note_ids", []))
+    pending = await wait_extractions(safe(job_id), body.get("capture_ids", []) + body.get("note_ids", []), FINALIZE_WAIT_S)
+    if pending:
+        raise HTTPException(503, f"extraction still running for {pending}, retry later")
     rec = build_record(safe(job_id), body)
     write_json(STORE / "jobs" / job_id / "job_record.json", rec)
     return rec

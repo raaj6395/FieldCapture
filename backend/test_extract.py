@@ -66,3 +66,18 @@ def test_upload_returns_before_extraction_and_finalize_sees_fields(tmp_path, mon
     cap = r.json()["captures"][0]
     assert cap["extraction"] == "done" and cap["fields"]["damage_type"]["value"] == "water_stain"
     assert {"received", "stored", "extract_start", "extract_done", "cmd"} <= set(cap["timing"])
+
+
+def test_finalize_refuses_while_extraction_is_pending(tmp_path, monkeypatch):
+    import json as _json
+
+    from fastapi.testclient import TestClient
+
+    import app as backend
+    monkeypatch.setattr(backend, "STORE", tmp_path)
+    monkeypatch.setattr(backend, "FINALIZE_WAIT_S", 0)
+    d = tmp_path / "jobs/J6/captures"
+    d.mkdir(parents=True)
+    (d / "c01.json").write_text(_json.dumps({"capture_id": "c01", "extraction": "pending"}))
+    r = TestClient(backend.app).post("/jobs/J6/finalize", json={"started_at": 1795700000000, "capture_ids": ["c01"], "note_ids": [], "events": []})
+    assert r.status_code == 503 and not (tmp_path / "jobs/J6/job_record.json").exists()
