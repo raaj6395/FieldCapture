@@ -530,6 +530,7 @@ class JobSession(private val app: Application) {
       captureLock.withLock {
         if (job.state != JobState.ACTIVE) return@launch say(if (job.state == JobState.PAUSED) "Still paused." else if (job.open) "Glasses not connected." else "No job.")
         val t = SystemClock.elapsedRealtime()
+        val timing = linkedMapOf("cmd" to System.currentTimeMillis())
         var best: Attempt? = null
         var attempts = 0
         for (round in 0..MAX_RETAKES) {
@@ -549,17 +550,21 @@ class JobSession(private val app: Application) {
           if (job.state != JobState.ACTIVE) break
         }
         val b = best ?: return@launch say("Photo failed. Say retake.")
+        timing["shot"] = System.currentTimeMillis()
         val id = "c%02d".format(job.captures.size + 1)
         val file = File(jobDir(), "$id.${b.ext}").apply { writeBytes(b.bytes) }
         if (shot.kind == "nameplate") {
           runCatching { withContext(Dispatchers.Default) { Ocr.read(upright(b.bytes)) } }
               .onSuccess { o -> File(jobDir(), "$id.ocr.json").writeText(o.toString()); log("ocr $id: ${o.getJSONArray("lines").length()} lines in ${o.getLong("ms")}ms") }
               .onFailure { log("ocr $id FAILED: $it") }
+          timing["ocr"] = System.currentTimeMillis()
         }
         val flag = if (b.reasons.isEmpty()) "ok" else "low"
         job.captures += Capture(id, shot.kind, System.currentTimeMillis(), file.name, shot.room, shot.surface, shot.unrecognised, transcript, conf, retakeOf,
-            b.scores, b.reasons, attempts, flag)
+            b.scores, b.reasons, attempts, flag, timing)
         lastShot = shot
+        persist()
+        timing["saved"] = System.currentTimeMillis()
         persist()
         queueUpload()
         log("captured $id ${shot.kind} quality=$flag ${b.reasons} after $attempts shots, ${file.length() / 1024}KB in ${SystemClock.elapsedRealtime() - t}ms")
@@ -694,6 +699,7 @@ class JobSession(private val app: Application) {
           .put("surface", c.surface).put("unrecognised", c.unrecognised).put("transcript", c.transcript)
           .put("asr_confidence", c.asrConfidence?.toDouble()).put("retake_of", c.retakeOf)
           .put("quality_flag", c.qualityFlag).put("quality_reasons", JSONArray(c.qualityReasons)).put("attempts", c.attempts)
+          .put("timing", JSONObject(c.timing as Map<*, *>))
           .put("quality", c.quality?.let { q -> JSONObject().put("blur", q.blur).put("brightness", q.brightness).put("dark_frac", q.darkFrac)
               .put("glare_frac", q.glareFrac).put("edge_density", q.edgeDensity).put("border_edge_frac", q.borderEdgeFrac) })
     }))
@@ -720,7 +726,8 @@ class JobSession(private val app: Application) {
           it.optJSONObject("quality")?.let { q -> QualityScores(q.getDouble("blur"), q.getDouble("brightness"), q.getDouble("dark_frac"),
               q.getDouble("glare_frac"), q.getDouble("edge_density"), q.getDouble("border_edge_frac")) },
           it.optJSONArray("quality_reasons")?.let { r -> (0 until r.length()).map(r::getString) } ?: emptyList(),
-          it.optInt("attempts", 1), it.optString("quality_flag", "unchecked"))
+          it.optInt("attempts", 1), it.optString("quality_flag", "unchecked"),
+          it.optJSONObject("timing")?.let { t -> t.keys().asSequence().associateWith { k -> t.getLong(k) } } ?: emptyMap())
     }
     job.notes += o.getJSONArray("notes").objs().map { Note(it.getString("id"), it.getLong("at"), it.getString("text"), it.getString("transcript"), it.flt("asr_confidence")) }
     job.restore()

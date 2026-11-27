@@ -11,6 +11,7 @@
     "tech_id": {"type": "string", "minLength": 1},
     "status": {"enum": ["complete", "partial"]},
     "missing": {"type": "array", "items": {"type": "string"}},
+    "finalized_at_ms": {"type": "integer"},
     "started_at": {"type": "string", "format": "date-time"},
     "ended_at": {"type": ["string", "null"], "format": "date-time"},
     "device": {
@@ -70,6 +71,7 @@
         "voice_command": {"type": ["string", "null"]},
         "asr_confidence": {"type": ["number", "null"]},
         "retake_of": {"type": ["string", "null"]},
+        "timing": {"type": "object", "additionalProperties": {"type": "integer"}},
         "quality": {
           "type": "object",
           "required": ["passed", "flag", "attempts", "scores", "failed_checks"],

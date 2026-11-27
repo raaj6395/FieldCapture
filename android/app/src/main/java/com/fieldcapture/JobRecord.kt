@@ -23,6 +23,7 @@ data class Capture(
     val qualityReasons: List<String> = emptyList(),
     val attempts: Int = 1,
     val qualityFlag: String = "unchecked",
+    val timing: Map<String, Long> = emptyMap(),
 )
 
 data class Note(val id: String, val at: Long, val text: String, val transcript: String, val asrConfidence: Float?)

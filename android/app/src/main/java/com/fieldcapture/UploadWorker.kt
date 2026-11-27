@@ -47,6 +47,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
           .put("quality", JSONObject().put("flag", c.optString("quality_flag", "unchecked")).put("attempts", c.optInt("attempts", 1))
               .put("reasons", c.optJSONArray("quality_reasons") ?: JSONArray()).put("scores", c.opt("quality")))
       File(dir, "$id.ocr.json").takeIf { it.exists() }?.let { meta.put("ocr", JSONObject(it.readText())) }
+      meta.put("timing", (c.optJSONObject("timing") ?: JSONObject()).put("upload_start", System.currentTimeMillis()))
       val code = multipart("/captures", meta.toString(), File(dir, c.getString("file")))
       ok = mark(dir, id, code) && ok
     }

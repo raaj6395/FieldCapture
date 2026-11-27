@@ -69,8 +69,13 @@ def read_nameplate(photo, ocr, quality, cache):
     return with_vlm(ml, cache, lambda *a, vlm: extract.nameplate_fields(*a, vlm=vlm), photo, ocr, quality)
 
 
+def now_ms():
+    return int(time.time() * 1000)
+
+
 @app.post("/captures")
 async def post_capture(meta: str = Form(...), photo: UploadFile = File(...)):
+    received = now_ms()
     m = json.loads(meta)
     job, cid = safe(m["job_id"]), safe(m["capture_id"])
     d = STORE / "jobs" / job / "captures"
@@ -99,12 +104,15 @@ async def post_capture(meta: str = Form(...), photo: UploadFile = File(...)):
         },
         "fields": voice_fields(m),
     }
+    timing = dict(m.get("timing") or {}, received=received, extract_start=now_ms())
     if m["type"] == "nameplate":
         if m.get("ocr"):
             write_json(d / f"{cid}.ocr.json", m["ocr"])
         rec["fields"].update(read_nameplate(photo_path, m.get("ocr"), rec["quality"], d / f"{cid}.vlm.json"))
     elif m["type"] == "damage":
         rec["fields"].update(with_vlm({}, d / f"{cid}.vlm.json", extract.damage_fields, photo_path, rec["quality"], m.get("room"), m.get("surface")))
+    timing["extract_done"] = now_ms()
+    rec["timing"] = dict(timing, stored=now_ms())
     write_json(d / f"{cid}.json", rec)
     return JSONResponse({"status": "stored", "capture_id": cid}, 201)
 
@@ -158,6 +166,7 @@ def build_record(job, body):
         "tech_id": body.get("tech_id", "tech-1"),
         "status": "partial" if missing else "complete",
         "missing": missing,
+        "finalized_at_ms": now_ms(),
         "started_at": iso(body["started_at"]),
         "ended_at": iso(body.get("ended_at")),
         "device": body.get("device", {"type": "mock", "sdk_version": "DAT 1.1.0"}),
