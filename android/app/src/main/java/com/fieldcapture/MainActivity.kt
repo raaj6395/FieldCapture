@@ -21,6 +21,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
@@ -64,7 +69,14 @@ class MainActivity : ComponentActivity() {
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContent { MaterialTheme { Surface { JobScreen(js, ::startJob) } } }
+    setContent {
+      MaterialTheme {
+        Surface {
+          var review by remember { mutableStateOf<String?>(null) }
+          review?.let { id -> BackHandler { review = null }; ReviewScreen(id) { review = null } } ?: JobScreen(js, ::startJob) { review = it }
+        }
+      }
+    }
     perms.launch(
         arrayOf(
             Manifest.permission.BLUETOOTH_CONNECT,
@@ -78,7 +90,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun JobScreen(js: JobSession, startJob: () -> Unit) {
+fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit) {
   val state by js.state.collectAsStateWithLifecycle()
   val rev by js.rev.collectAsStateWithLifecycle()
   val listening by js.listening.collectAsStateWithLifecycle()
@@ -95,6 +107,15 @@ fun JobScreen(js: JobSession, startJob: () -> Unit) {
       Button(onClick = js::pause) { Text("Pause") }
       Button(onClick = js::resume) { Text("Resume") }
       Button(onClick = js::stopJob) { Text("End job") }
+    }
+    val ctx = LocalContext.current
+    val past = remember(rev, state) { pastJobs(ctx).take(5) }
+    if (past.isNotEmpty()) {
+      Text("Past jobs", fontSize = 12.sp)
+      FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+        if (state == JobState.STOPPED && job.id.isNotEmpty()) Button(onClick = { openReview(job.id) }) { Text("Review job ${job.id}") }
+        past.filter { it != job.id || state != JobState.STOPPED }.forEach { id -> OutlinedButton(onClick = { openReview(id) }) { Text(id, fontSize = 11.sp) } }
+      }
     }
     Text("Mock glasses", fontSize = 12.sp)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {

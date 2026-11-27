@@ -87,6 +87,10 @@ Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quali
 - Extraction runs after the upload returns (the phone's request takes ~2 ms on the server); finalize waits for pending extractions and answers 503 so the phone retries if one is still running. Measured on real walks: voice command -> capture has its extracted fields, 2.9 s median / 3.3 s p90; cost per job $0.0048 baseline, $0.0024 with the `lean` profile (`eval/REPORT.md`, Stretch D).
 - Model choice: bake-off on 5 plates - 3.1 Flash-Lite 11 correct / 2 wrong, 2.5 Flash 10/3, 3.5 Flash too slow (11-36 s, timeouts). Cost per job ~ **$0.006** at paid-tier prices (2 nameplates, 5 damage, 3 notes); we ran on the free tier ($0 billed; free-tier requests may be used by Google to improve its models). Every call is logged with tokens and latency; a local guard caps calls per day under the free-tier quota.
 
+## Reviewing a job in the app
+
+After "end job" the main screen offers **Review job**, and **Past jobs** lists the last five. The review screen shows every photo with its quality result, each extracted field with its confidence (green >= 0.8, amber 0.5-0.8, red < 0.5 with "check"; grey "not read" when the field is absent), the notes with their structured fields, and the draft line items (highlighted when they need review, with quantity basis and source ids). It reads the finalized record from the backend (`GET /jobs/{id}`); when the job has not uploaded yet or the backend is unreachable it shows what is on the phone (photos, quality, spoken room/surface) and says the AI results arrive after upload.
+
 ## Job record, line items, offline
 
 - Schema: `backend/schema/job_record.schema.json` (JSON Schema 2020-12, validated on every finalize). Catalog: `backend/line_items.json` (13 codes, e.g. DRY-RR drywall remove and replace per sq ft, PNT-CLG, SUBF-RR, DRY-EQ drying equipment per day, WH-RPL water heater replace). Rules in `backend/mapping.py`; every line item carries its quantity basis (measured / estimated / default), source capture ids and a status (draft / needs_review / suggested). Low confidence or low photo quality -> needs_review.
