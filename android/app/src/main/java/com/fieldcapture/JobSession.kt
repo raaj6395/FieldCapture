@@ -229,7 +229,7 @@ class JobSession(private val app: Application) {
               say("Glasses back. Still paused.")
             }
             doffPaused -> say("Glasses off. Paused.")
-            else -> say("Paused. Say resume.")
+            else -> say("Paused.")
           }
       JobState.RECONNECTING -> {
         release()
@@ -471,12 +471,12 @@ class JobSession(private val app: Application) {
   fun handle(cmd: Command, transcript: String? = null, conf: Float? = null) {
     when (cmd) {
       Command.CaptureNameplate -> capture(Shot("nameplate"), transcript, conf)
-      is Command.CaptureDamage -> capture(Shot("damage", cmd.room ?: job.lastRoom(), cmd.surface, cmd.unrecognised), transcript, conf)
+      is Command.CaptureDamage -> capture(Shot("damage", cmd.room ?: job.lastRoom().takeIf { cmd.unrecognised == null }, cmd.surface, cmd.unrecognised), transcript, conf)
       is Command.Note -> {
         if (!job.open) return say("No job.")
         job.notes += Note("n${job.notes.size + 1}", System.currentTimeMillis(), cmd.text, transcript ?: cmd.text, conf)
         persist()
-        say("Noted.")
+        say("Noted: ${cmd.text}.")
       }
       Command.Start -> startJob()
       Command.Pause -> pause()
@@ -499,7 +499,7 @@ class JobSession(private val app: Application) {
   private fun capture(shot: Shot, transcript: String?, conf: Float?, retakeOf: String? = null) {
     scope.launch {
       captureLock.withLock {
-        if (job.state != JobState.ACTIVE) return@launch say(if (job.state == JobState.PAUSED) "Paused. Say resume." else if (job.open) "Glasses not connected." else "No job.")
+        if (job.state != JobState.ACTIVE) return@launch say(if (job.state == JobState.PAUSED) "Still paused." else if (job.open) "Glasses not connected." else "No job.")
         val st = stream ?: return@launch say("No camera.")
         val t = SystemClock.elapsedRealtime()
         st.capturePhoto().fold(
@@ -523,7 +523,7 @@ class JobSession(private val app: Application) {
 
   private fun reply(shot: Shot) =
       if (shot.kind == "nameplate") "Nameplate."
-      else listOfNotNull("Damage", shot.room, shot.surface).joinToString(", ") + "."
+      else listOfNotNull("Damage", shot.room ?: shot.unrecognised, shot.surface).joinToString(", ") + "."
 
   private fun savePhoto(id: String, p: PhotoData): File {
     val dir = jobDir()
