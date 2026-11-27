@@ -5,7 +5,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions
-import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -17,66 +16,99 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
 import com.meta.wearable.dat.core.Wearables
+import com.meta.wearable.dat.core.types.Permission
+import com.meta.wearable.dat.core.types.PermissionStatus
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-  private val vm: ProbeViewModel by viewModels()
+  private val js by lazy { (application as FieldCaptureApp).session }
 
   private val perms =
       registerForActivityResult(RequestMultiplePermissions()) { result ->
-        vm.log("android perms: ${result.map { "${it.key.substringAfterLast('.')}=${it.value}" }}")
-        Wearables.initialize(this)
-        vm.log("Wearables initialized")
+        js.log("android perms: ${result.map { "${it.key.substringAfterLast('.')}=${it.value}" }}")
+        js.boot()
       }
+
+  private val datPerm =
+      registerForActivityResult(Wearables.RequestPermissionContract()) { result ->
+        result.onSuccess { js.log("DAT permission: $it"); if (it == PermissionStatus.Granted) startJob() }
+            .onFailure { e, _ -> js.log("DAT permission FAILED: ${e.description}") }
+      }
+
+  private fun startJob() {
+    lifecycleScope.launch {
+      for (p in listOf(Permission.CAMERA, Permission.MICROPHONE)) {
+        val status = Wearables.checkPermissionStatus(p).getOrNull()
+        if (status != PermissionStatus.Granted) {
+          js.log("DAT $p is $status - requesting")
+          return@launch datPerm.launch(p)
+        }
+      }
+      js.startJob()
+    }
+  }
 
   override fun onCreate(savedInstanceState: Bundle?) {
     super.onCreate(savedInstanceState)
-    setContent { MaterialTheme { Surface { ProbeScreen(vm) } } }
-    if (savedInstanceState == null) {
-      perms.launch(
-          arrayOf(
-              Manifest.permission.BLUETOOTH_CONNECT,
-              Manifest.permission.CAMERA,
-              Manifest.permission.RECORD_AUDIO,
-          ),
-      )
-    }
+    setContent { MaterialTheme { Surface { JobScreen(js, ::startJob) } } }
+    perms.launch(
+        arrayOf(
+            Manifest.permission.BLUETOOTH_CONNECT,
+            Manifest.permission.CAMERA,
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.POST_NOTIFICATIONS,
+        ),
+    )
   }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ProbeScreen(vm: ProbeViewModel) {
-  val lines by vm.lines.collectAsStateWithLifecycle()
-  val buttons =
-      listOf(
-          "Mock setup" to { vm.mockSetup(); Unit },
-          "Start session" to vm::startSession,
-          "Camera" to vm::startCamera,
-          "Photo" to { vm.capturePhoto(); Unit },
-          "Speech" to vm::startSpeech,
-          "Inject speech" to vm::injectSpeech,
-          "Inputs" to vm::startInputs,
-          "Inject capture" to vm::injectCapture,
-          "Stop session" to { vm.stopSession(); Unit },
-      ) + listOf("powerOff", "powerOn", "doff", "don", "fold", "unfold", "tap").map { a -> a to { vm.mock(a) } }
+fun JobScreen(js: JobSession, startJob: () -> Unit) {
+  val state by js.state.collectAsStateWithLifecycle()
+  val rev by js.rev.collectAsStateWithLifecycle()
+  val listening by js.listening.collectAsStateWithLifecycle()
+  val lines by js.lines.collectAsStateWithLifecycle()
+  val job = js.job
+  rev
 
   Column(Modifier.fillMaxSize().safeDrawingPadding().padding(8.dp)) {
+    Text("Job ${job.id.ifEmpty { "-" }}  $state", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+    Text("${job.captures.size} photos, ${job.notes.size} notes, mic ${if (listening) "on" else "off"}", fontSize = 14.sp)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-      buttons.forEach { (label, action) -> Button(onClick = action) { Text(label, fontSize = 12.sp) } }
+      Button(onClick = startJob) { Text("Start job") }
+      Button(onClick = js::pause) { Text("Pause") }
+      Button(onClick = js::resume) { Text("Resume") }
+      Button(onClick = js::stopJob) { Text("End job") }
+    }
+    Text("Mock glasses", fontSize = 12.sp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+      listOf("powerOff", "powerOn", "doff", "don", "fold", "unfold", "tap", "hot", "cool", "battery10", "battery80", "button").forEach { a ->
+        OutlinedButton(onClick = { js.mock(a) }) { Text(a, fontSize = 11.sp) }
+      }
+    }
+    Text("Inject speech", fontSize = 12.sp)
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+      listOf("capture nameplate", "capture damage kitchen north wall", "note subfloor soft by the cabinet", "pause", "resume").forEach { t ->
+        OutlinedButton(onClick = { js.inject(t) }) { Text(t, fontSize = 11.sp) }
+      }
     }
     LazyColumn(Modifier.fillMaxSize().padding(top = 8.dp)) {
-      items(lines) { Text(it, fontFamily = FontFamily.Monospace, fontSize = 11.sp) }
+      items(lines) { Text(it, fontFamily = FontFamily.Monospace, fontSize = 10.sp) }
     }
   }
 }
