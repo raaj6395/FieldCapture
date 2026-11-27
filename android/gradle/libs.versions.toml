@@ -5,6 +5,9 @@ activityCompose = "1.13.0"
 composeBom = "2026.05.01"
 mwdat = "1.1.0"
 lifecycle = "2.10.0"
+junit = "4.13.2"
+androidxTestRunner = "1.7.0"
+androidxTestExt = "1.3.0"
 
 [libraries]
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
@@ -17,6 +20,9 @@ mwdat-camera = { group = "com.meta.wearable", name = "mwdat-camera", version.ref
 mwdat-mockdevice = { group = "com.meta.wearable", name = "mwdat-mockdevice", version.ref = "mwdat" }
 mwdat-speech = { group = "com.meta.wearable", name = "mwdat-speech", version.ref = "mwdat" }
 mwdat-inputs = { group = "com.meta.wearable", name = "mwdat-inputs", version.ref = "mwdat" }
+junit = { group = "junit", name = "junit", version.ref = "junit" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExt" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

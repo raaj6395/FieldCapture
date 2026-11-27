@@ -23,6 +23,7 @@ android {
     versionName = "0.1"
     manifestPlaceholders["mwdat_application_id"] = "0"
     manifestPlaceholders["mwdat_client_token"] = "0"
+    testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
   compileOptions {
@@ -45,4 +46,8 @@ dependencies {
   implementation(libs.mwdat.mockdevice)
   implementation(libs.mwdat.speech)
   implementation(libs.mwdat.inputs)
+  testImplementation(libs.junit)
+  androidTestImplementation(libs.junit)
+  androidTestImplementation(libs.androidx.test.runner)
+  androidTestImplementation(libs.androidx.test.ext.junit)
 }
