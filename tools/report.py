@@ -102,6 +102,8 @@ def main():
            f"Successful calls {len(ok)}, input tokens {sum(c.get('in_tokens') or 0 for c in ok)}, output tokens "
            f"{sum(c.get('out_tokens') or 0 for c in ok)}, thinking tokens {sum(c.get('thought_tokens') or 0 for c in ok)}. "
            "All on the AI Studio free tier: $0 billed (free-tier requests may be used by Google to improve its models).", ""]
+    if (OUT / "STRETCH.md").exists():
+        md += [(OUT / "STRETCH.md").read_text(), ""]
     if (OUT / "FINDINGS.md").exists():
         md = md[:5] + [(OUT / "FINDINGS.md").read_text(), ""] + md[5:]
     (OUT / "REPORT.md").write_text("\n".join(md))
