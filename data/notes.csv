@@ -1,0 +1,13 @@
+id,text,intended,source,location,issue,material,severity
+nt01,subfloor soft by the cabinet,subfloor soft by the cabinet,injected,by the cabinet,soft_spot,subfloor,
+nt02,water heater leaking at the base,water heater leaking at the base,injected,water heater base,leak,appliance,
+nt03,what are heated looking at base,water heater leaking at base,asr_quiet,water heater base,leak,appliance,
+nt04,drywall behind soft wallet,drywall soft behind the toilet,asr_noisy,behind the toilet,soft_spot,drywall,
+nt05,Water Street on the garage volume,water stain on the garage wall,asr_noisy,garage wall,water_stain,,
+nt06,drywall soft behind the toilet,drywall soft behind the toilet,authored,behind the toilet,soft_spot,drywall,
+nt07,heavy mold on the back wall of the basement closet,heavy mold on the back wall of the basement closet,authored,basement closet back wall,mold,,high
+nt08,carpet wet about six feet out from the dishwasher,carpet wet about six feet out from the dishwasher,authored,near the dishwasher,wet,carpet,
+nt09,small crack in the ceiling above the bathtub minor,small crack in the ceiling above the bathtub minor,authored,above the bathtub,crack,ceiling,low
+nt10,baseboard swollen along the hallway needs replacing,baseboard swollen along the hallway needs replacing,authored,hallway,swelling,baseboard,
+nt11,insulation in the attic is soaked severe,insulation in the attic is soaked severe,authored,attic,wet,insulation,high
+nt12,pipe under the kitchen sink dripping,pipe under the kitchen sink dripping,authored,under the kitchen sink,leak,pipe,
