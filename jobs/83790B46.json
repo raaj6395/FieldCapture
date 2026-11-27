@@ -1,0 +1,301 @@
+{
+  "schema_version": "1.0",
+  "job_id": "83790B46",
+  "tech_id": "tech-1",
+  "status": "complete",
+  "missing": [],
+  "started_at": "2026-11-27T05:46:00.466Z",
+  "ended_at": "2026-11-27T05:48:18.133Z",
+  "device": {
+    "type": "mock",
+    "sdk_version": "DAT 1.1.0"
+  },
+  "session_events": [
+    {
+      "type": "start",
+      "at": "2026-11-27T05:46:00.466Z",
+      "transition": "IDLE->CONNECTING",
+      "cause": "start job"
+    },
+    {
+      "type": "connected",
+      "at": "2026-11-27T05:46:02.202Z",
+      "transition": "CONNECTING->ACTIVE",
+      "cause": "streaming"
+    },
+    {
+      "type": "disconnect",
+      "at": "2026-11-27T05:47:45.883Z",
+      "transition": "ACTIVE->RECONNECTING",
+      "cause": "app restarted"
+    },
+    {
+      "type": "reconnect",
+      "at": "2026-11-27T05:47:47.609Z",
+      "transition": "RECONNECTING->ACTIVE",
+      "cause": "streaming"
+    },
+    {
+      "type": "stop",
+      "at": "2026-11-27T05:48:18.133Z",
+      "transition": "ACTIVE->STOPPED",
+      "cause": "end job"
+    }
+  ],
+  "captures": [
+    {
+      "capture_id": "c01",
+      "type": "nameplate",
+      "taken_at": "2026-11-27T05:46:28.804Z",
+      "received_at": "2026-11-27T05:48:36.066Z",
+      "photo": "captures/c01.jpg",
+      "voice_command": "capture nameplate",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 2,
+        "scores": {
+          "blur": 99.45340519319026,
+          "brightness": 101.76491610388383,
+          "dark_frac": 0.029236111111111112,
+          "glare_frac": 0.08301183127572016,
+          "edge_density": 0.04695425539374956,
+          "border_edge_frac": 0.2446795270690728
+        },
+        "failed_checks": []
+      },
+      "fields": {}
+    },
+    {
+      "capture_id": "c02",
+      "type": "damage",
+      "taken_at": "2026-11-27T05:46:38.284Z",
+      "received_at": "2026-11-27T05:48:36.083Z",
+      "photo": "captures/c02.jpg",
+      "voice_command": "capture damage kitchen north wall",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 1039.265617129361,
+          "brightness": 109.9980129557462,
+          "dark_frac": 0.00012152777777777777,
+          "glare_frac": 8.037551440329218e-05,
+          "edge_density": 0.1565239241719455,
+          "border_edge_frac": 0.1037521000560015
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "kitchen",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "north wall",
+          "confidence": 0.9,
+          "source": "voice"
+        }
+      }
+    },
+    {
+      "capture_id": "c03",
+      "type": "damage",
+      "taken_at": "2026-11-27T05:46:52.390Z",
+      "received_at": "2026-11-27T05:48:36.098Z",
+      "photo": "captures/c03.jpg",
+      "voice_command": "capture damage ceiling",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 371.86971780619405,
+          "brightness": 108.75911167971447,
+          "dark_frac": 0.036244212962962964,
+          "glare_frac": 0,
+          "edge_density": 0.06561908323788598,
+          "border_edge_frac": 0.17641820286757504
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "kitchen",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "ceiling",
+          "confidence": 0.9,
+          "source": "voice"
+        }
+      }
+    },
+    {
+      "capture_id": "c04",
+      "type": "damage",
+      "taken_at": "2026-11-27T05:48:09.006Z",
+      "received_at": "2026-11-27T05:48:36.111Z",
+      "photo": "captures/c04.jpg",
+      "voice_command": "capture damage bathroom floor",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 2,
+        "scores": {
+          "blur": 231.39610537566423,
+          "brightness": 110.49017401188358,
+          "dark_frac": 0.0010011574074074074,
+          "glare_frac": 0,
+          "edge_density": 0.10413501320679741,
+          "border_edge_frac": 0.036531986531986534
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "bathroom",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "floor",
+          "confidence": 0.9,
+          "source": "voice"
+        }
+      }
+    }
+  ],
+  "notes": [
+    {
+      "note_id": "n1",
+      "taken_at": "2026-11-27T05:47:06.145Z",
+      "text": "subfloor soft by the cabinet",
+      "voice_command": "note subfloor soft by the cabinet",
+      "fields": {
+        "needs_review": {
+          "value": true,
+          "confidence": 1.0,
+          "source": "rule: spoken notes are error-prone in noise"
+        }
+      }
+    },
+    {
+      "note_id": "n2",
+      "taken_at": "2026-11-27T05:47:20.256Z",
+      "text": "water heater leaking at the base",
+      "voice_command": "note water heater leaking at the base",
+      "fields": {
+        "needs_review": {
+          "value": true,
+          "confidence": 1.0,
+          "source": "rule: spoken notes are error-prone in noise"
+        }
+      }
+    }
+  ],
+  "line_items": [
+    {
+      "code": "INSP-REV",
+      "description": "Needs human review (unclear observation)",
+      "unit": "each",
+      "qty": 1,
+      "qty_basis": "default",
+      "room": "kitchen",
+      "source_ids": [
+        "c02"
+      ],
+      "confidence": 0.0,
+      "status": "needs_review",
+      "reason": "damage type unclear (conf 0.00)"
+    },
+    {
+      "code": "INSP-REV",
+      "description": "Needs human review (unclear observation)",
+      "unit": "each",
+      "qty": 1,
+      "qty_basis": "default",
+      "room": "kitchen",
+      "source_ids": [
+        "c03"
+      ],
+      "confidence": 0.0,
+      "status": "needs_review",
+      "reason": "damage type unclear (conf 0.00)"
+    },
+    {
+      "code": "INSP-REV",
+      "description": "Needs human review (unclear observation)",
+      "unit": "each",
+      "qty": 1,
+      "qty_basis": "default",
+      "room": "bathroom",
+      "source_ids": [
+        "c04"
+      ],
+      "confidence": 0.0,
+      "status": "needs_review",
+      "reason": "damage type unclear (conf 0.00)"
+    },
+    {
+      "code": "SUBF-RR",
+      "description": "Remove and replace subfloor",
+      "unit": "sq ft",
+      "qty": 10.0,
+      "qty_basis": "default",
+      "room": null,
+      "source_ids": [
+        "n1"
+      ],
+      "confidence": 0.5,
+      "status": "needs_review",
+      "reason": "from a spoken note, check the note text"
+    },
+    {
+      "code": "CAB-DR",
+      "description": "Detach and reset cabinet",
+      "unit": "each",
+      "qty": 1,
+      "qty_basis": "default",
+      "room": null,
+      "source_ids": [
+        "n1"
+      ],
+      "confidence": 0.5,
+      "status": "needs_review",
+      "reason": "from a spoken note, check the note text"
+    },
+    {
+      "code": "DRY-EQ",
+      "description": "Dehumidifier + air mover, per day",
+      "unit": "day",
+      "qty": 3,
+      "qty_basis": "default",
+      "room": null,
+      "source_ids": [
+        "n1"
+      ],
+      "confidence": 0.5,
+      "status": "needs_review",
+      "reason": "from a spoken note, check the note text"
+    }
+  ],
+  "summary": {
+    "captures": 4,
+    "notes": 2,
+    "low_quality": 0,
+    "needs_review": 6,
+    "upload_delay_s_max": 127.3
+  }
+}
