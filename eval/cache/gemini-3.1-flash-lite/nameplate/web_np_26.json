@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "model": {
+  "value": "275.064",
+  "confidence": 1,
+  "raw_text": "275.064"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1,
+  "raw_text": "locomotive"
+ }
+}

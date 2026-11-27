@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "peeling_paint",
+  "confidence": 0.95
+ },
+ "size": {
+  "width_cm": 40,
+  "height_cm": 25,
+  "reference": "none",
+  "confidence": 0.4
+ },
+ "evidence": "The image clearly shows layers of paint flaking and peeling away from the ceiling surface, revealing the substrate underneath."
+}

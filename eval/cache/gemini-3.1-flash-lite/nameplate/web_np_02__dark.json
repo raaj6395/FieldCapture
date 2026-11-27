@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "MALMBERGS",
+  "confidence": 1.0,
+  "raw_text": "MALMBERGS"
+ },
+ "model": {
+  "value": "MS 711-2",
+  "confidence": 1.0,
+  "raw_text": "MS 711-2"
+ },
+ "serial": {
+  "value": "1212073091",
+  "confidence": 1.0,
+  "raw_text": "1212073091"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9,
+  "raw_text": "THREE - PHASE INDUCTION MOTOR"
+ }
+}

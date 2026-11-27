@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "garage ceiling",
+  "confidence": 0.6
+ },
+ "issue": {
+  "value": "water_stain",
+  "confidence": 0.9
+ },
+ "material": {
+  "value": "ceiling",
+  "confidence": 0.6
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

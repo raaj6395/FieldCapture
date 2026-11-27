@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "M\u00c1V",
+  "confidence": 0.9,
+  "raw_text": "M\u00c1V"
+ },
+ "model": {
+  "value": "275,064",
+  "confidence": 0.9,
+  "raw_text": "275,064"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.8,
+  "raw_text": null
+ }
+}

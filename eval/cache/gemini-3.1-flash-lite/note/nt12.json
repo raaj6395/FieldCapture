@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "under the kitchen sink",
+  "confidence": 1.0
+ },
+ "issue": {
+  "value": "leak",
+  "confidence": 1.0
+ },
+ "material": {
+  "value": "pipe",
+  "confidence": 1.0
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

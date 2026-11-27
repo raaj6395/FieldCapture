@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Canon",
+  "confidence": 1,
+  "raw_text": "Canon"
+ },
+ "model": {
+  "value": "K30278",
+  "confidence": 1,
+  "raw_text": "K30278"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1,
+  "raw_text": "AC ADAPTER"
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "base",
+  "confidence": 0.6
+ },
+ "issue": {
+  "value": "water_stain",
+  "confidence": 0.4
+ },
+ "material": {
+  "value": "baseboard",
+  "confidence": 0.5
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

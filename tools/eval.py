@@ -89,6 +89,8 @@ def run(args):
     t = json.loads(quality.THRESHOLDS.read_text())
     rows, planned, missing = [], [], 0
     for file, parent, variant, lab in frames():
+        if args.split and lab["split"] != args.split or args.variants and variant not in args.variants.split(","):
+            continue
         img = (WEB / "img" / file) if variant == "orig" else (WEB / "synth" / file)
         kind = lab["type"]
         s = quality.score(img, t)
@@ -128,11 +130,18 @@ def run(args):
                     rows.append(r)
         except Missing:
             missing += 1
+        except gemini.QuotaGuard:
+            raise
+        except Exception as e:
+            print(f"skipped {file}: {e}")
+            missing += 1
     for n in csv.DictReader(open(ROOT / "data/notes.csv")):
         vlm = cached("note", n["id"], args.run, planned)
         try:
             fields, _ = extract.note_fields(n["text"], vlm=vlm)
-        except Missing:
+        except (Missing, RuntimeError) as e:
+            if not isinstance(e, Missing):
+                print(f"skipped note {n['id']}: {e}")
             missing += 1
             continue
         for f in NOTE_FIELDS:
@@ -147,6 +156,8 @@ def run(args):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", action="store_true", help="call the API for frames not in the cache")
+    ap.add_argument("--split", default="", help="only frames of this split (notes are always eval)")
+    ap.add_argument("--variants", default="", help="comma list, e.g. orig,dark")
     args = ap.parse_args()
     rows, planned, missing = run(args)
     if not args.run:

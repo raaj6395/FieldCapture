@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "water_damage",
+  "confidence": 0.85
+ },
+ "size": {
+  "width_cm": 15,
+  "height_cm": 10,
+  "reference": "none",
+  "confidence": 0.3
+ },
+ "evidence": "The ceiling shows clear brown water staining and a small area where the textured material is peeling and delaminating at the corner."
+}

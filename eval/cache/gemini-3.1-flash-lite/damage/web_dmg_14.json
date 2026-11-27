@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "mold",
+  "confidence": 0.95
+ },
+ "size": {
+  "width_cm": 150,
+  "height_cm": 120,
+  "reference": "microwave",
+  "confidence": 0.6
+ },
+ "evidence": "The wall behind the counter exhibits extensive dark, patchy discoloration characteristic of mold growth."
+}

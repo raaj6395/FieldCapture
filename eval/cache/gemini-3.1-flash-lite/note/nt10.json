@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "hallway",
+  "confidence": 0.95
+ },
+ "issue": {
+  "value": "swelling",
+  "confidence": 1.0
+ },
+ "material": {
+  "value": "baseboard",
+  "confidence": 1.0
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": "replace",
+  "confidence": 1.0
+ }
+}

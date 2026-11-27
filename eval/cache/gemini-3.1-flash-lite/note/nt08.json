@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "near the dishwasher",
+  "confidence": 0.9
+ },
+ "issue": {
+  "value": "wet",
+  "confidence": 1.0
+ },
+ "material": {
+  "value": "carpet",
+  "confidence": 1.0
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

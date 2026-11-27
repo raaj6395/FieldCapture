@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "water_stain",
+  "confidence": 0.85
+ },
+ "size": {
+  "width_cm": 250,
+  "height_cm": 180,
+  "reference": "standard window",
+  "confidence": 0.4
+ },
+ "evidence": "The wall exhibits distinct vertical streaking and discoloration patterns consistent with water staining, visible despite the low lighting conditions."
+}

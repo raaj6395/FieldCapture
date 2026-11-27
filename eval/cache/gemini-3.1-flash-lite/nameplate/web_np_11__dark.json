@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Mielewerke",
+  "confidence": 0.95,
+  "raw_text": "Mielewerke A.G."
+ },
+ "model": {
+  "value": "W 700",
+  "confidence": 0.8,
+  "raw_text": "W 700"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "washing_machine",
+  "confidence": 0.9,
+  "raw_text": "Trommelwaschmaschine"
+ }
+}

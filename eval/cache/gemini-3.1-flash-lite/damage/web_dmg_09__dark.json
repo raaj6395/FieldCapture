@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "mold",
+  "confidence": 0.85
+ },
+ "size": {
+  "width_cm": 40,
+  "height_cm": 10,
+  "reference": "none",
+  "confidence": 0.3
+ },
+ "evidence": "The image shows dark, irregular, mottled patches on the surface consistent with fungal growth."
+}

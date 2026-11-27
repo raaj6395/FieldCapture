@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "peeling_paint",
+  "confidence": 0.85
+ },
+ "size": {
+  "width_cm": 25,
+  "height_cm": 20,
+  "reference": "none",
+  "confidence": 0.4
+ },
+ "evidence": "The ceiling surface shows clear signs of paint flaking and cracking in patches, indicating delamination of the paint layer."
+}

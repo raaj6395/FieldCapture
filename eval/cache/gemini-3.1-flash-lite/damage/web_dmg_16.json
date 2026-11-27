@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "mold",
+  "confidence": 0.95
+ },
+ "size": {
+  "width_cm": 250,
+  "height_cm": 200,
+  "reference": "none",
+  "confidence": 0.4
+ },
+ "evidence": "The wall exhibits extensive dark and green fungal growth patterns characteristic of mold, accompanied by significant water staining and streaking."
+}

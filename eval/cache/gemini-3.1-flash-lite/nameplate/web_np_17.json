@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "CONSOLIDATED AIRCRAFT",
+  "confidence": 1.0,
+  "raw_text": "CONSOLIDATED AIRCRAFT"
+ },
+ "model": {
+  "value": "PBY-5",
+  "confidence": 1.0,
+  "raw_text": "PBY-5"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 1.0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": "1940-10-17",
+  "confidence": 1.0,
+  "raw_text": "10-17-40"
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1.0,
+  "raw_text": null
+ }
+}

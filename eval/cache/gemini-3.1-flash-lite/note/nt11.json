@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "attic",
+  "confidence": 1.0
+ },
+ "issue": {
+  "value": "wet",
+  "confidence": 0.9
+ },
+ "material": {
+  "value": "insulation",
+  "confidence": 1.0
+ },
+ "severity": {
+  "value": "high",
+  "confidence": 1.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

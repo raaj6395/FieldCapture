@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Rheem",
+  "confidence": 1.0,
+  "raw_text": "Rheem"
+ },
+ "model": {
+  "value": "PROE50 T2 RH95",
+  "confidence": 0.95,
+  "raw_text": "PROE50 T2 RH95"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "water_heater",
+  "confidence": 1.0,
+  "raw_text": "Water Heater"
+ }
+}

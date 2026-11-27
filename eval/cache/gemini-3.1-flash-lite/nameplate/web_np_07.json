@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Luftwerk",
+  "confidence": 1.0,
+  "raw_text": "Luftwerk"
+ },
+ "model": {
+  "value": "platinline51-1,30kW-3ph",
+  "confidence": 1.0,
+  "raw_text": "platinline51-1,30kW-3ph"
+ },
+ "serial": {
+  "value": "201920185_20190522_1",
+  "confidence": 1.0,
+  "raw_text": "201920185_20190522_1"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9,
+  "raw_text": "3ph-Motor"
+ }
+}

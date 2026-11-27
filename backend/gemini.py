@@ -15,6 +15,7 @@ MODELS = ["gemini-3.1-flash-lite", "gemini-2.5-flash"]
 DAILY_CAP = {"gemini-3.1-flash-lite": 450}
 DEFAULT_CAP = 18
 MIN_GAP_S = 13
+RETRY_503_S = 20
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
 
 
@@ -81,7 +82,7 @@ def generate(prompt, schema, image=None, purpose="", models=MODELS):
     if image is not None:
         data, size = jpeg(image)
         parts.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(data).decode()}})
-    for model in models:
+    for model in [m for m in models for _ in range(2)]:
         body = {"contents": [{"parts": parts}],
                 "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "responseSchema": schema,
                                      "thinkingConfig": thinking(model)}}
@@ -101,6 +102,7 @@ def generate(prompt, schema, image=None, purpose="", models=MODELS):
         if r.status_code == 429:
             raise QuotaGuard(f"{model}: HTTP 429 from Google, stopping")
         if r.status_code == 503:
+            time.sleep(RETRY_503_S)
             continue
         if r.status_code >= 400:
             raise RuntimeError(f"{model}: HTTP {r.status_code} {r.text[:300]}")

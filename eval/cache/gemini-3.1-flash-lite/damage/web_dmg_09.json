@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "mold",
+  "confidence": 0.95
+ },
+ "size": {
+  "width_cm": 40,
+  "height_cm": 10,
+  "reference": "none",
+  "confidence": 0.4
+ },
+ "evidence": "The image displays distinct dark, circular, and patchy fungal growth along the corner of the wall."
+}

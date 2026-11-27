@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "none",
+  "confidence": 0.8
+ },
+ "size": {
+  "width_cm": null,
+  "height_cm": null,
+  "reference": "none",
+  "confidence": 0.0
+ },
+ "evidence": "The image is too dark to discern any specific damage on the wall surface."
+}

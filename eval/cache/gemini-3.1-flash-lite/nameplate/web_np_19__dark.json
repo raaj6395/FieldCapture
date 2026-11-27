@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Staiper",
+  "confidence": 0.6,
+  "raw_text": "\u03a3\u03a4\u0391\u0399\u03a0\u0395\u03a1"
+ },
+ "model": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "hvac_compressor",
+  "confidence": 0.4,
+  "raw_text": "\u039a\u039b\u0399\u039c\u0391\u03a4\u0399\u03a3\u039c\u039f\u03a3"
+ }
+}

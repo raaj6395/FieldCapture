@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "by the cabinet",
+  "confidence": 0.95
+ },
+ "issue": {
+  "value": "soft_spot",
+  "confidence": 0.95
+ },
+ "material": {
+  "value": "subfloor",
+  "confidence": 0.95
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "ALSTOM",
+  "confidence": 1.0,
+  "raw_text": "ALSTOM"
+ },
+ "model": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "serial": {
+  "value": "KZ4AT0049",
+  "confidence": 1.0,
+  "raw_text": "KZ4AT0049"
+ },
+ "mfg_date": {
+  "value": "2023",
+  "confidence": 1.0,
+  "raw_text": "2023"
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9,
+  "raw_text": null
+ }
+}

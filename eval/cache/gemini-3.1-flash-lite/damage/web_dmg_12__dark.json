@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "mold",
+  "confidence": 0.85
+ },
+ "size": {
+  "width_cm": 10,
+  "height_cm": 80,
+  "reference": "window frame",
+  "confidence": 0.4
+ },
+ "evidence": "There is a dark, vertical discoloration running down the corner of the wall, consistent with mold growth."
+}

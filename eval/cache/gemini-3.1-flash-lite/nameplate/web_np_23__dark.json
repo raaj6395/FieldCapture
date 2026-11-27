@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "D. C. Electronics, Inc.",
+  "confidence": 1,
+  "raw_text": "D. C. ELECTRONICS, INC."
+ },
+ "model": {
+  "value": "60",
+  "confidence": 0.9,
+  "raw_text": "60"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9,
+  "raw_text": "REVERBERATION DEVICE"
+ }
+}

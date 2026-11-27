@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "above the bathtub",
+  "confidence": 0.95
+ },
+ "issue": {
+  "value": "crack",
+  "confidence": 1.0
+ },
+ "material": {
+  "value": "ceiling",
+  "confidence": 1.0
+ },
+ "severity": {
+  "value": "low",
+  "confidence": 0.95
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

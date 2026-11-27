@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "THE BOEING COMPANY",
+  "confidence": 1,
+  "raw_text": "THE BOEING COMPANY"
+ },
+ "model": {
+  "value": "707-320",
+  "confidence": 0.8,
+  "raw_text": "707-320"
+ },
+ "serial": {
+  "value": "192357",
+  "confidence": 0.7,
+  "raw_text": "192357"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1,
+  "raw_text": null
+ }
+}

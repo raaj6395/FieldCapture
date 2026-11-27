@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "basement closet back wall",
+  "confidence": 0.95
+ },
+ "issue": {
+  "value": "mold",
+  "confidence": 1.0
+ },
+ "material": {
+  "value": "drywall",
+  "confidence": 0.7
+ },
+ "severity": {
+  "value": "high",
+  "confidence": 0.9
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

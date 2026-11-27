@@ -1,0 +1,274 @@
+file,parent,split,type,variant,condition,lighting,gate_passed,gate_reasons,source,field,truth,predicted,confidence,outcome,cer,size_err,how,raw_text
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,combined,make,Malmbergs,MALMBERGS,0.868,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,MALMBERGS
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,mlkit,make,Malmbergs,Malmbergs,0.339,correct,,,ocr:mlkit,MALMBERGS
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,combined,model,MS 711-2,MS 711-2,1.0,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,MS 711-2
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,mlkit,model,MS 711-2,MS 711-2,0.814,correct,,,ocr:mlkit,FRAME MS 711-2
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,combined,serial,1212073091,1212073091,1.0,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,1212073091
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,mlkit,serial,1212073091,1212073091,0.902,correct,0.0,,ocr:mlkit,NO. 1212073091
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_02.jpg,web_np_02.jpg,eval,nameplate,orig,good,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,combined,make,Prelude,PRELUDE,0.864,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,PRELUDE
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,mlkit,make,Prelude,Prelude,0.319,correct,,,ocr:mlkit,PRELUDE
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,combined,model,A550,A550,1.0,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,A550
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,mlkit,model,A550,A550,0.887,correct,,,ocr:mlkit,Modell A550
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,combined,serial,921100305,921100305,0.7,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,921100305
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,mlkit,serial,921100305,,0.0,missed,,,ocr:mlkit,
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_04.jpg,web_np_04.jpg,eval,nameplate,orig,good,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,combined,make,Canon,Canon,1.0,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,Canon
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,mlkit,make,Canon,Canon,0.701,correct,,,ocr:mlkit,Canon
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,combined,model,K30278,K30278,0.7,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,K30278
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,mlkit,model,K30278,,0.0,missed,,,ocr:mlkit,
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_05.jpg,web_np_05.jpg,eval,nameplate,orig,good,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,combined,make,Luftwerk,Luftwerk,0.16,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,Luftwerk
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,mlkit,make,Luftwerk,Rohsii,0.126,wrong,,,ocr:mlkit,RoHSII
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,combined,model,"platinline51-1,30kW-3ph","platinline51-1,30kW-3ph",0.35,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,"platinline51-1,30kW-3ph"
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,mlkit,model,"platinline51-1,30kW-3ph",,0.0,missed,,,ocr:mlkit,
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,combined,serial,201920185_20190522_1,201920185_20190522_1,0.35,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,201920185_20190522_1
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,mlkit,serial,201920185_20190522_1,,0.0,missed,,,ocr:mlkit,
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_07.jpg,web_np_07.jpg,eval,nameplate,orig,small,normal,0,dark,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,combined,make,Rheem,Rheem,0.4,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,Rheem
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,mlkit,make,Rheem,Energygude,0.251,wrong,,,ocr:mlkit,ENERGYGUDE
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,combined,model,PROE50 T2 RH95,PROE50 T2 RH95,0.665,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,PROE50 T2 RH95
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,mlkit,model,PROE50 T2 RH95,,0.0,missed,,,ocr:mlkit,
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_09.jpg,web_np_09.jpg,eval,nameplate,orig,angle,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,combined,make,Miele,Mielewerke A.G.,1.0,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,Mielewerke A.G.
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,mlkit,make,Miele,Mielewerke A.G.,0.302,correct,,,ocr:mlkit,Mielewerke A.G.
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,combined,model,T. Wa. 700,T. Wa. 700,0.4,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,T. Wa. 700
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,mlkit,model,T. Wa. 700,B2,0.104,wrong,,,ocr:mlkit,Drehstron -Motor n 800 Type b2
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,combined,serial,12471,DREHSTRON,0.234,wrong,1.8,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,Drehstron -Motor n 800 Type b2
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,mlkit,serial,12471,DREHSTRON,0.335,wrong,1.8,,ocr:mlkit,Drehstron -Motor n 800 Type b2
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_11.jpg,web_np_11.jpg,eval,nameplate,orig,dark,low,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,combined,make,Boeing,THE BOEING COMPANY,0.863,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,THE BOEING COMPANY
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,mlkit,make,Boeing,The Boeing Companyo,0.317,correct,,,ocr:mlkit,THE BOEING COMPANYo
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,combined,model,737-8200,737-8200,0.36,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,737-8200
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,mlkit,model,737-8200,737-8O0,0.633,wrong,,,ocr:mlkit,737-8O0
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,combined,serial,62357,69357,0.32,wrong,0.2,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,69357
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,mlkit,serial,62357,T62357,0.624,wrong,0.2,,ocr:mlkit,t62357
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_13.jpg,web_np_13.jpg,eval,nameplate,orig,glare,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,combined,make,Ryan Aeronautical,RYAN AERONAUTICAL CO,0.32,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,RYAN AERONAUTICAL CO
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,mlkit,make,Ryan Aeronautical,Mfg. Byryan Aeronautical Ce,0.288,correct,,,ocr:mlkit,MFG. BYRYAN AERONAUTICAL CE
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,combined,model,163555-1-43,163555-1,0.63,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,163555-1
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,mlkit,model,163555-1-43,,0.0,missed,,,ocr:mlkit,
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,240
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_15.jpg,web_np_15.jpg,eval,nameplate,orig,embossed,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,combined,make,Consolidated Aircraft,CONSOLIDATED AIRCRAFT,0.32,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,CONSOLIDATED AIRCRAFT
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,mlkit,make,Consolidated Aircraft,Aircraft Corp.,0.316,wrong,,,ocr:mlkit,AIRCRAFT CORP.
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,combined,model,PBY-5,PBY-5,1.0,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,PBY-5
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,mlkit,model,PBY-5,PBY-5,0.853,correct,,,ocr:mlkit,MODEL PBY-5
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,combined,serial,68,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,mlkit,serial,68,,0.0,missed,,,ocr:mlkit,
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,combined,mfg_date,1940-10-17,1940-10,1.0,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,10-17-40
+web_np_17.jpg,web_np_17.jpg,eval,nameplate,orig,good,normal,1,,mlkit,mfg_date,1940-10-17,1940-10-17,0.59,correct,,,ocr:mlkit,DATE LO 17 4O
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,combined,make,Steyr,ΣΤΑΓΙΕΡ ΝΤΑΙΜΛΕΡ - ΠΟΥΧ ΕΛΛΑΣ Α.Β.Ε.,0.504,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,ΣΤΑΓΙΕΡ ΝΤΑΙΜΛΕΡ - ΠΟΥΧ ΕΛΛΑΣ Α.Β.Ε. ΣΙΝΔΟΣ
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,mlkit,make,Steyr,,0.0,missed,,,ocr:mlkit,
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,combined,model,768,768 H 295 00,0.63,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,768 H 295 00
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,mlkit,model,768,,0.0,missed,,,ocr:mlkit,
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_19.jpg,web_np_19.jpg,eval,nameplate,orig,rust,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,combined,make,Alstom,ALSTOM,0.853,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,ALSTOM
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,mlkit,make,Alstom,Alstom,0.263,correct,,,ocr:mlkit,ALSTOM
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,combined,model,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,mlkit,model,,,0.0,null_ok,,,ocr:mlkit,
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,combined,serial,KZ4AT0049,KZ4AT0049,0.7,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,KZ4AT0049
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,mlkit,serial,KZ4AT0049,,0.0,missed,,,ocr:mlkit,
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,combined,mfg_date,2023,2023,0.7,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,2023
+web_np_21.jpg,web_np_21.jpg,eval,nameplate,orig,small,bright,1,,mlkit,mfg_date,2023,,0.0,missed,,,ocr:mlkit,
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,combined,make,O.C. Electronics,"O.C. Electronics, Inc.",0.32,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,"O. C. ELECTRONICS, INC."
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,mlkit,make,O.C. Electronics,Folded Line,0.34,wrong,,,ocr:mlkit,Folded Line
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,combined,model,Folded Line 60,60,0.123,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,60
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,mlkit,model,Folded Line 60,60,0.176,wrong,,,ocr:mlkit,60
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_23.jpg,web_np_23.jpg,eval,nameplate,orig,good,normal,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,combined,make,MAV,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,mlkit,make,MAV,,0.0,missed,,,ocr:mlkit,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,combined,model,"275,064",275.064,0.7,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,275.064
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,mlkit,model,"275,064",,0.0,missed,,,ocr:mlkit,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_26.jpg,web_np_26.jpg,eval,nameplate,orig,small,low,1,,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_dmg_02.jpg,web_dmg_02.jpg,eval,damage,orig,good,normal,1,,combined,damage_type,water_stain,peeling_paint,0.95,wrong,,,vlm:gemini-3.1-flash-lite,"The image clearly shows layers of paint flaking and peeling away from the ceiling surface, revealing the substrate underneath."
+web_dmg_04.jpg,web_dmg_04.jpg,eval,damage,orig,wide,normal,1,,combined,damage_type,water_damage,water_damage,0.95,correct,,,vlm:gemini-3.1-flash-lite,"The ceiling tiles show extensive water staining, sagging, and a missing tile indicating structural failure due to moisture."
+web_dmg_06.jpg,web_dmg_06.jpg,eval,damage,orig,low_contrast,low,1,,combined,damage_type,mold,peeling_paint,0.85,wrong,,,vlm:gemini-3.1-flash-lite,"The ceiling surface shows clear signs of paint flaking and cracking in patches, indicating delamination of the paint layer."
+web_dmg_08.jpg,web_dmg_08.jpg,eval,damage,orig,low_contrast,normal,1,,combined,damage_type,crack,water_damage,0.85,wrong,,,vlm:gemini-3.1-flash-lite,The ceiling shows clear brown water staining and a small area where the textured material is peeling and delaminating at the corner.
+web_dmg_09.jpg,web_dmg_09.jpg,eval,damage,orig,good,normal,1,,combined,damage_type,mold,mold,0.95,correct,,,vlm:gemini-3.1-flash-lite,"The image displays distinct dark, circular, and patchy fungal growth along the corner of the wall."
+web_dmg_12.jpg,web_dmg_12.jpg,eval,damage,orig,good,normal,1,,combined,damage_type,mold,mold,0.95,correct,,,vlm:gemini-3.1-flash-lite,"The corner of the wall exhibits dark, speckled fungal growth characteristic of mold."
+web_dmg_14.jpg,web_dmg_14.jpg,eval,damage,orig,clutter,normal,1,,combined,damage_type,mold,mold,0.95,correct,,,vlm:gemini-3.1-flash-lite,"The wall behind the counter exhibits extensive dark, patchy discoloration characteristic of mold growth."
+web_dmg_16.jpg,web_dmg_16.jpg,eval,damage,orig,severe,normal,1,,combined,damage_type,water_damage,mold,0.95,wrong,,,vlm:gemini-3.1-flash-lite,"The wall exhibits extensive dark and green fungal growth patterns characteristic of mold, accompanied by significant water staining and streaking."
+web_dmg_18.jpg,web_dmg_18.jpg,eval,damage,orig,good,bright,1,,combined,damage_type,none,none,0.95,correct,,,vlm:gemini-3.1-flash-lite,"The ceiling appears to be in good condition with no visible signs of water damage, mold, cracks, or other structural defects."
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,make,Malmbergs,MALMBERGS,0.485,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,MALMBERGS
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,make,Malmbergs,Malmbergs,0.142,correct,,,ocr:mlkit,MALMBERGS
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,model,MS 711-2,MS 711-2,0.35,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,MS 711-2
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,model,MS 711-2,,0.0,missed,,,ocr:mlkit,
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,serial,1212073091,1212073091,0.658,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,1212073091
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,serial,1212073091,1212073091,0.317,correct,0.0,,ocr:mlkit,A 167/0.97| NO 1212073091)
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_02__dark.jpg,web_np_02.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,combined,make,Prelude,PRELUDE,0.486,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,PRELUDE
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,mlkit,make,Prelude,Prelude,0.144,correct,,,ocr:mlkit,PRELUDE
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,combined,model,A550,A550,0.712,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,A550
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,mlkit,model,A550,A550,0.423,correct,,,ocr:mlkit,Modell A550
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,combined,serial,921100305,921100305,0.315,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,921100305
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,mlkit,serial,921100305,,0.0,missed,,,ocr:mlkit,
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_04__dark.jpg,web_np_04.jpg,eval,nameplate,dark,good,low,0,dark blurry,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,make,Canon,Canon,0.2,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,Canon
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,make,Canon,Cea,0.071,wrong,,,ocr:mlkit,CEA
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,model,K30278,K30278,0.35,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,K30278
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,model,K30278,,0.0,missed,,,ocr:mlkit,
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_05__dark.jpg,web_np_05.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,combined,make,Luftwerk,Luftwerk,0.144,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,Luftwerk
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,mlkit,make,Luftwerk,Cosphdbt,0.052,wrong,,,ocr:mlkit,CosPHDBT
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,combined,model,"platinline51-1,30kW-3ph",platinline51-1.30kW-3ph,0.315,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,platinline51-1.30kW-3ph
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,mlkit,model,"platinline51-1,30kW-3ph",,0.0,missed,,,ocr:mlkit,
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,combined,serial,201920185_20190522_1,201920185_20190522_1,0.315,correct,0.0,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,201920185_20190522_1
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,mlkit,serial,201920185_20190522_1,,0.0,missed,,,ocr:mlkit,
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_07__dark.jpg,web_np_07.jpg,eval,nameplate,dark,small,low,0,dark,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,combined,make,Rheem,Energjcde,0.055,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,ENERGJCDE
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,mlkit,make,Rheem,Energjcde,0.078,wrong,,,ocr:mlkit,ENERGJCDE
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,combined,model,PROE50 T2 RH95,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,mlkit,model,PROE50 T2 RH95,,0.0,missed,,,ocr:mlkit,
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_09__dark.jpg,web_np_09.jpg,eval,nameplate,dark,angle,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,combined,make,Miele,Mielewerke,0.19,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,Mielewerke A.G.
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,mlkit,make,Miele,Mielewerie Pugy,0.107,correct,,,ocr:mlkit,Mielewerie PuGy
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,combined,model,T. Wa. 700,W 700,0.28,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,W 700
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,mlkit,model,T. Wa. 700,,0.0,missed,,,ocr:mlkit,
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,combined,serial,12471,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,mlkit,serial,12471,,0.0,missed,,,ocr:mlkit,
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_11__dark.jpg,web_np_11.jpg,eval,nameplate,dark,dark,low,0,dark blurry,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,combined,make,Boeing,THE BOEING COMPANY,0.16,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,THE BOEING COMPANY
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,mlkit,make,Boeing,The Boeing Dompanyo,0.147,correct,,,ocr:mlkit,THE BOEING DOMPANYo
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,combined,model,737-8200,707-320,0.28,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,707-320
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,mlkit,model,737-8200,,0.0,missed,,,ocr:mlkit,
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,combined,serial,62357,192357,0.245,wrong,0.4,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,192357
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,mlkit,serial,62357,,0.0,missed,,,ocr:mlkit,
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_13__dark.jpg,web_np_13.jpg,eval,nameplate,dark,glare,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,combined,make,Ryan Aeronautical,LOCKHEED AIRCRAFT CORP.,0.16,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,LOCKHEED AIRCRAFT CORP.
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,mlkit,make,Ryan Aeronautical,Mfg. Byryan Aeronautical Co,0.138,correct,,,ocr:mlkit,MFG. BYRYAN AERONAUTICAL CO
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,combined,model,163555-1-43,163555-1 -43-,0.315,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,163555-1 -43-
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,mlkit,model,163555-1-43,,0.0,missed,,,ocr:mlkit,
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,combined,serial,,200,0.07,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,200
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,mlkit,serial,,ME3555-L,0.098,wrong,,,ocr:mlkit,DRAWVING NO ME3555-L
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_15__dark.jpg,web_np_15.jpg,eval,nameplate,dark,embossed,low,0,dark,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,combined,make,Consolidated Aircraft,Consolidated Aircraft,0.16,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,CONSOLIDATED AIRCRAFT
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,mlkit,make,Consolidated Aircraft,Irc Cras,0.088,wrong,,,ocr:mlkit,IRC CRAS
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,combined,model,PBY-5,PBY-5,0.694,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:agree,PBY-5
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,mlkit,model,PBY-5,PBY-5,0.388,correct,,,ocr:mlkit,MODEL PBY-5
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,combined,serial,68,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,mlkit,serial,68,,0.0,missed,,,ocr:mlkit,
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,combined,mfg_date,1940-10-17,1940-10,0.35,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,10-17-40
+web_np_17__dark.jpg,web_np_17.jpg,eval,nameplate,dark,good,low,0,dark,mlkit,mfg_date,1940-10-17,,0.0,missed,,,ocr:mlkit,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,combined,make,Steyr,Staiper,0.168,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,ΣΤΑΙΠΕΡ
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,mlkit,make,Steyr,,0.0,missed,,,ocr:mlkit,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,combined,model,768,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,mlkit,model,768,,0.0,missed,,,ocr:mlkit,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_19__dark.jpg,web_np_19.jpg,eval,nameplate,dark,rust,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,make,Alstom,ALSTOM,0.28,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,ALSTOM
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,make,Alstom,,0.0,missed,,,ocr:mlkit,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,model,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,model,,,0.0,null_ok,,,ocr:mlkit,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,serial,KZ4AT0049,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,serial,KZ4AT0049,,0.0,missed,,,ocr:mlkit,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,mfg_date,2023,,0.0,missed,,,vlm:gemini-3.1-flash-lite,
+web_np_21__dark.jpg,web_np_21.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,mfg_date,2023,,0.0,missed,,,ocr:mlkit,
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,make,O.C. Electronics,"D. C. Electronics, Inc.",0.16,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict,"D. C. ELECTRONICS, INC."
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,make,O.C. Electronics,Revereeadn,0.081,wrong,,,ocr:mlkit,REVEREEADN
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,model,Folded Line 60,60,0.158,wrong,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,60
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,model,Folded Line 60,,0.0,missed,,,ocr:mlkit,
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_23__dark.jpg,web_np_23.jpg,eval,nameplate,dark,good,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,make,MAV,MÁV,0.252,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,MÁV
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,make,MAV,,0.0,missed,,,ocr:mlkit,
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,model,"275,064","275,064",0.315,correct,,,ocr:mlkit+vlm:gemini-3.1-flash-lite:solo,"275,064"
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,model,"275,064",,0.0,missed,,,ocr:mlkit,
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,serial,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,serial,,,0.0,null_ok,,,ocr:mlkit,
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,combined,mfg_date,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,
+web_np_26__dark.jpg,web_np_26.jpg,eval,nameplate,dark,small,low,0,dark blurry empty,mlkit,mfg_date,,,0.0,null_ok,,,ocr:mlkit,
+web_dmg_02__dark.jpg,web_dmg_02.jpg,eval,damage,dark,good,low,0,dark,combined,damage_type,water_stain,none,0.45,wrong,,,vlm:gemini-3.1-flash-lite,The image is too dark to discern any surface details or damage.
+web_dmg_04__dark.jpg,web_dmg_04.jpg,eval,damage,dark,wide,low,0,dark,combined,damage_type,water_damage,water_damage,0.45,correct,,,vlm:gemini-3.1-flash-lite,"The ceiling tiles show significant discoloration, sagging, and a missing tile, indicating structural water damage."
+web_dmg_06__dark.jpg,web_dmg_06.jpg,eval,damage,dark,low_contrast,low,0,dark,combined,damage_type,mold,peeling_paint,0.4,wrong,,,vlm:gemini-3.1-flash-lite,The image shows a localized area of bubbling and flaking paint on the ceiling surface.
+web_dmg_08__dark.jpg,web_dmg_08.jpg,eval,damage,dark,low_contrast,low,0,dark,combined,damage_type,crack,none,0.45,wrong,,,vlm:gemini-3.1-flash-lite,The image is too dark to discern any specific damage or surface features.
+web_dmg_09__dark.jpg,web_dmg_09.jpg,eval,damage,dark,good,low,0,dark,combined,damage_type,mold,mold,0.425,correct,,,vlm:gemini-3.1-flash-lite,"The image shows dark, irregular, mottled patches on the surface consistent with fungal growth."
+web_dmg_12__dark.jpg,web_dmg_12.jpg,eval,damage,dark,good,low,0,dark,combined,damage_type,mold,mold,0.425,correct,,,vlm:gemini-3.1-flash-lite,"There is a dark, vertical discoloration running down the corner of the wall, consistent with mold growth."
+web_dmg_14__dark.jpg,web_dmg_14.jpg,eval,damage,dark,clutter,low,0,dark,combined,damage_type,mold,none,0.4,wrong,,,vlm:gemini-3.1-flash-lite,The image is too dark to discern any specific damage on the wall surface.
+web_dmg_16__dark.jpg,web_dmg_16.jpg,eval,damage,dark,severe,low,0,dark,combined,damage_type,water_damage,water_stain,0.425,wrong,,,vlm:gemini-3.1-flash-lite,"The wall exhibits distinct vertical streaking and discoloration patterns consistent with water staining, visible despite the low lighting conditions."
+nt01,nt01,eval,note,injected,injected,,,,combined,location,by the cabinet,by the cabinet,0.76,correct,,,vlm:gemini-3.1-flash-lite,subfloor soft by the cabinet
+nt01,nt01,eval,note,injected,injected,,,,combined,issue,soft_spot,soft_spot,0.76,correct,,,vlm:gemini-3.1-flash-lite,subfloor soft by the cabinet
+nt01,nt01,eval,note,injected,injected,,,,combined,material,subfloor,subfloor,0.76,correct,,,vlm:gemini-3.1-flash-lite,subfloor soft by the cabinet
+nt01,nt01,eval,note,injected,injected,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,subfloor soft by the cabinet
+nt02,nt02,eval,note,injected,injected,,,,combined,location,water heater base,water heater base,0.76,correct,,,vlm:gemini-3.1-flash-lite,water heater leaking at the base
+nt02,nt02,eval,note,injected,injected,,,,combined,issue,leak,leak,0.8,correct,,,vlm:gemini-3.1-flash-lite,water heater leaking at the base
+nt02,nt02,eval,note,injected,injected,,,,combined,material,appliance,appliance,0.72,correct,,,vlm:gemini-3.1-flash-lite,water heater leaking at the base
+nt02,nt02,eval,note,injected,injected,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,water heater leaking at the base
+nt03,nt03,eval,note,asr_quiet,asr_quiet,,,,combined,location,water heater base,base,0.48,wrong,,,vlm:gemini-3.1-flash-lite,what are heated looking at base
+nt03,nt03,eval,note,asr_quiet,asr_quiet,,,,combined,issue,leak,water_stain,0.32,wrong,,,vlm:gemini-3.1-flash-lite,what are heated looking at base
+nt03,nt03,eval,note,asr_quiet,asr_quiet,,,,combined,material,appliance,baseboard,0.4,wrong,,,vlm:gemini-3.1-flash-lite,what are heated looking at base
+nt03,nt03,eval,note,asr_quiet,asr_quiet,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,what are heated looking at base
+nt04,nt04,eval,note,asr_noisy,asr_noisy,,,,combined,location,behind the toilet,behind the toilet,0.56,correct,,,vlm:gemini-3.1-flash-lite,drywall behind soft wallet
+nt04,nt04,eval,note,asr_noisy,asr_noisy,,,,combined,issue,soft_spot,soft_spot,0.64,correct,,,vlm:gemini-3.1-flash-lite,drywall behind soft wallet
+nt04,nt04,eval,note,asr_noisy,asr_noisy,,,,combined,material,drywall,drywall,0.8,correct,,,vlm:gemini-3.1-flash-lite,drywall behind soft wallet
+nt04,nt04,eval,note,asr_noisy,asr_noisy,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,drywall behind soft wallet
+nt05,nt05,eval,note,asr_noisy,asr_noisy,,,,combined,location,garage wall,garage ceiling,0.48,correct,,,vlm:gemini-3.1-flash-lite,Water Street on the garage volume
+nt05,nt05,eval,note,asr_noisy,asr_noisy,,,,combined,issue,water_stain,water_stain,0.72,correct,,,vlm:gemini-3.1-flash-lite,Water Street on the garage volume
+nt05,nt05,eval,note,asr_noisy,asr_noisy,,,,combined,material,,ceiling,0.48,wrong,,,vlm:gemini-3.1-flash-lite,Water Street on the garage volume
+nt05,nt05,eval,note,asr_noisy,asr_noisy,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,Water Street on the garage volume
+nt06,nt06,eval,note,authored,authored,,,,combined,location,behind the toilet,behind the toilet,0.8,correct,,,vlm:gemini-3.1-flash-lite,drywall soft behind the toilet
+nt06,nt06,eval,note,authored,authored,,,,combined,issue,soft_spot,soft_spot,0.76,correct,,,vlm:gemini-3.1-flash-lite,drywall soft behind the toilet
+nt06,nt06,eval,note,authored,authored,,,,combined,material,drywall,drywall,0.8,correct,,,vlm:gemini-3.1-flash-lite,drywall soft behind the toilet
+nt06,nt06,eval,note,authored,authored,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,drywall soft behind the toilet
+nt07,nt07,eval,note,authored,authored,,,,combined,location,basement closet back wall,basement closet back wall,0.76,correct,,,vlm:gemini-3.1-flash-lite,heavy mold on the back wall of the basement closet
+nt07,nt07,eval,note,authored,authored,,,,combined,issue,mold,mold,0.8,correct,,,vlm:gemini-3.1-flash-lite,heavy mold on the back wall of the basement closet
+nt07,nt07,eval,note,authored,authored,,,,combined,material,,drywall,0.56,wrong,,,vlm:gemini-3.1-flash-lite,heavy mold on the back wall of the basement closet
+nt07,nt07,eval,note,authored,authored,,,,combined,severity,high,high,0.72,correct,,,vlm:gemini-3.1-flash-lite,heavy mold on the back wall of the basement closet
+nt08,nt08,eval,note,authored,authored,,,,combined,location,near the dishwasher,near the dishwasher,0.72,correct,,,vlm:gemini-3.1-flash-lite,carpet wet about six feet out from the dishwasher
+nt08,nt08,eval,note,authored,authored,,,,combined,issue,wet,wet,0.8,correct,,,vlm:gemini-3.1-flash-lite,carpet wet about six feet out from the dishwasher
+nt08,nt08,eval,note,authored,authored,,,,combined,material,carpet,carpet,0.8,correct,,,vlm:gemini-3.1-flash-lite,carpet wet about six feet out from the dishwasher
+nt08,nt08,eval,note,authored,authored,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,carpet wet about six feet out from the dishwasher
+nt09,nt09,eval,note,authored,authored,,,,combined,location,above the bathtub,above the bathtub,0.76,correct,,,vlm:gemini-3.1-flash-lite,small crack in the ceiling above the bathtub minor
+nt09,nt09,eval,note,authored,authored,,,,combined,issue,crack,crack,0.8,correct,,,vlm:gemini-3.1-flash-lite,small crack in the ceiling above the bathtub minor
+nt09,nt09,eval,note,authored,authored,,,,combined,material,ceiling,ceiling,0.8,correct,,,vlm:gemini-3.1-flash-lite,small crack in the ceiling above the bathtub minor
+nt09,nt09,eval,note,authored,authored,,,,combined,severity,low,low,0.76,correct,,,vlm:gemini-3.1-flash-lite,small crack in the ceiling above the bathtub minor
+nt10,nt10,eval,note,authored,authored,,,,combined,location,hallway,hallway,0.76,correct,,,vlm:gemini-3.1-flash-lite,baseboard swollen along the hallway needs replacing
+nt10,nt10,eval,note,authored,authored,,,,combined,issue,swelling,swelling,0.8,correct,,,vlm:gemini-3.1-flash-lite,baseboard swollen along the hallway needs replacing
+nt10,nt10,eval,note,authored,authored,,,,combined,material,baseboard,baseboard,0.8,correct,,,vlm:gemini-3.1-flash-lite,baseboard swollen along the hallway needs replacing
+nt10,nt10,eval,note,authored,authored,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,baseboard swollen along the hallway needs replacing
+nt11,nt11,eval,note,authored,authored,,,,combined,location,attic,attic,0.8,correct,,,vlm:gemini-3.1-flash-lite,insulation in the attic is soaked severe
+nt11,nt11,eval,note,authored,authored,,,,combined,issue,wet,wet,0.72,correct,,,vlm:gemini-3.1-flash-lite,insulation in the attic is soaked severe
+nt11,nt11,eval,note,authored,authored,,,,combined,material,insulation,insulation,0.8,correct,,,vlm:gemini-3.1-flash-lite,insulation in the attic is soaked severe
+nt11,nt11,eval,note,authored,authored,,,,combined,severity,high,high,0.8,correct,,,vlm:gemini-3.1-flash-lite,insulation in the attic is soaked severe
+nt12,nt12,eval,note,authored,authored,,,,combined,location,under the kitchen sink,under the kitchen sink,0.8,correct,,,vlm:gemini-3.1-flash-lite,pipe under the kitchen sink dripping
+nt12,nt12,eval,note,authored,authored,,,,combined,issue,leak,leak,0.8,correct,,,vlm:gemini-3.1-flash-lite,pipe under the kitchen sink dripping
+nt12,nt12,eval,note,authored,authored,,,,combined,material,pipe,pipe,0.8,correct,,,vlm:gemini-3.1-flash-lite,pipe under the kitchen sink dripping
+nt12,nt12,eval,note,authored,authored,,,,combined,severity,,,0.0,null_ok,,,vlm:gemini-3.1-flash-lite,pipe under the kitchen sink dripping

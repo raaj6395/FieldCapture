@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "behind the toilet",
+  "confidence": 1.0
+ },
+ "issue": {
+  "value": "soft_spot",
+  "confidence": 0.95
+ },
+ "material": {
+  "value": "drywall",
+  "confidence": 1.0
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

@@ -1,0 +1,6 @@
+file,field,cause,fix
+web_dmg_02.jpg,damage_type,"ground-truth / taxonomy: ceiling shows both peeling paint and brown tide marks; label set allowed one class and had no peeling_paint","multi-label damage (primary + secondary); both map to PNT-CLG so the line item is still right"
+web_dmg_16.jpg,damage_type,"several damages in one frame: water streaking, peeling and green growth; model picked mold, label picked water_damage","multi-label output; ask for the damage that explains the most area"
+web_dmg_06.jpg,damage_type,"low light / near-monochrome frame: grey mold spots have no colour cue and read as flaking paint","ask for top-2 classes with probabilities and use the margin as confidence; gate already flags low brightness"
+web_dmg_08.jpg,damage_type,"several damages in one frame: crack along the joint plus a yellow stain and a peeled corner","multi-label; crack-specific question when the tech says 'crack'"
+web_np_15.jpg,model,"field printed in two boxes (163555-1 and -43-); model kept only the first box, ML Kit had no read to disagree","prompt: include every box of the field; agreement needs both readers, so solo answers stay capped at x0.7"

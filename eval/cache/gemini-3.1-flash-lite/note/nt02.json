@@ -1,0 +1,22 @@
+{
+ "location": {
+  "value": "water heater base",
+  "confidence": 0.95
+ },
+ "issue": {
+  "value": "leak",
+  "confidence": 1.0
+ },
+ "material": {
+  "value": "appliance",
+  "confidence": 0.9
+ },
+ "severity": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "action": {
+  "value": null,
+  "confidence": 0.0
+ }
+}

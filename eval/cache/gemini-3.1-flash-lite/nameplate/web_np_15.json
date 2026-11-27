@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "RYAN AERONAUTICAL CO",
+  "confidence": 1.0,
+  "raw_text": "RYAN AERONAUTICAL CO"
+ },
+ "model": {
+  "value": "163555-1",
+  "confidence": 0.9,
+  "raw_text": "163555-1"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.5,
+  "raw_text": "240"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 1.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.8,
+  "raw_text": null
+ }
+}

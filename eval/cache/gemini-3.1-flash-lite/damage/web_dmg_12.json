@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "mold",
+  "confidence": 0.95
+ },
+ "size": {
+  "width_cm": 25,
+  "height_cm": 100,
+  "reference": "outlet cover",
+  "confidence": 0.6
+ },
+ "evidence": "The corner of the wall exhibits dark, speckled fungal growth characteristic of mold."
+}

@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "PRELUDE",
+  "confidence": 1.0,
+  "raw_text": "PRELUDE"
+ },
+ "model": {
+  "value": "A550",
+  "confidence": 1.0,
+  "raw_text": "A550"
+ },
+ "serial": {
+  "value": "921100305",
+  "confidence": 1.0,
+  "raw_text": "921100305"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.8,
+  "raw_text": null
+ }
+}

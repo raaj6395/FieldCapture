@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "peeling_paint",
+  "confidence": 0.8
+ },
+ "size": {
+  "width_cm": 15,
+  "height_cm": 15,
+  "reference": "none",
+  "confidence": 0.3
+ },
+ "evidence": "The image shows a localized area of bubbling and flaking paint on the ceiling surface."
+}

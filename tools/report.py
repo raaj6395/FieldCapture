@@ -66,6 +66,11 @@ def main():
     if notes:
         md += ["Notes by source (real ASR vs typed):", "", table(HEAD, acc_rows(notes, lambda r: r["variant"])), ""]
 
+    md += ["Room and surface are not read from the image: they come from the spoken command (confidence 0.9, 0.3 if the word is not in the known list). "
+           "Their accuracy is the voice accuracy measured live in Phase 3 (docs/SDK_NOTES.md):", "",
+           table(["condition", "commands with right command + room/surface"], [["quiet room, one speaker, ~1 m", "75% (15/20) before parser fixes"],
+                                                                              ["fan/TV on", "70% (7/10) after fixes"]]), ""]
+
     buckets = [(0, 0.5), (0.5, 0.8), (0.8, 1.01)]
     preds = [r for r in ev if r["predicted"] not in ("", None)]
     md += ["## T4 Calibration (eval split, every non-null prediction)", "",
@@ -97,6 +102,8 @@ def main():
            f"Successful calls {len(ok)}, input tokens {sum(c.get('in_tokens') or 0 for c in ok)}, output tokens "
            f"{sum(c.get('out_tokens') or 0 for c in ok)}, thinking tokens {sum(c.get('thought_tokens') or 0 for c in ok)}. "
            "All on the AI Studio free tier: $0 billed (free-tier requests may be used by Google to improve its models).", ""]
+    if (OUT / "FINDINGS.md").exists():
+        md = md[:5] + [(OUT / "FINDINGS.md").read_text(), ""] + md[5:]
     (OUT / "REPORT.md").write_text("\n".join(md))
     print("\n".join(md))
 

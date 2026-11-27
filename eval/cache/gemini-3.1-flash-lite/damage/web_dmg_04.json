@@ -1,0 +1,13 @@
+{
+ "damage_type": {
+  "value": "water_damage",
+  "confidence": 0.95
+ },
+ "size": {
+  "width_cm": 180,
+  "height_cm": 120,
+  "reference": "ceiling tile 61 cm",
+  "confidence": 0.7
+ },
+ "evidence": "The ceiling tiles show extensive water staining, sagging, and a missing tile indicating structural failure due to moisture."
+}
