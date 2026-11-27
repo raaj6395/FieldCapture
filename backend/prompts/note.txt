@@ -1,0 +1,13 @@
+Turn this spoken field note from a water-damage restoration technician into structured fields.
+The text came from speech recognition and may contain misheard words (for example "Water Street" for "water stain", "wallet" for "toilet").
+If a misheard phrase has an obvious restoration meaning, use it but lower your confidence. If the meaning is not clear, return null.
+
+Note: "{text}"
+
+Fields (null if not stated or not clear):
+- location: where in the building, short phrase (for example "behind the toilet", "basement closet back wall")
+- issue: one of leak, wet, water_stain, mold, soft_spot, crack, hole, swelling, odor, other
+- material: one of drywall, subfloor, carpet, cabinet, ceiling, insulation, baseboard, tile, wood, pipe, appliance, other
+- severity: one of low, medium, high, only if the note states or clearly implies it ("minor", "small" -> low; "severe", "soaked", "heavy" -> high)
+- action: suggested action if stated (for example "replace", "dry out"), else null
+- confidence for each field: probability (0 to 1) that it is right.

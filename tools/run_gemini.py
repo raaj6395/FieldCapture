@@ -7,7 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend"))
 import gemini
-from app import NAMEPLATE_SCHEMA
+from extract import NAMEPLATE_SCHEMA
 
 WEB = ROOT / "data/web"
 

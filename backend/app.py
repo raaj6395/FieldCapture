@@ -8,6 +8,7 @@ import jsonschema
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
+import extract
 import gemini
 import nameplate
 from mapping import line_items
@@ -16,11 +17,6 @@ HERE = Path(__file__).parent
 STORE = Path(os.environ.get("FC_STORE", HERE / "store"))
 SCHEMA = json.loads((HERE / "schema/job_record.schema.json").read_text())
 VALIDATOR = jsonschema.Draft202012Validator(SCHEMA, format_checker=jsonschema.FormatChecker())
-
-NAMEPLATE_PROMPT = (HERE / "prompts/nameplate.txt").read_text()
-VLM_FIELD = {"type": "object", "properties": {"value": {"type": "string", "nullable": True}, "confidence": {"type": "number"},
-                                              "raw_text": {"type": "string", "nullable": True}}, "required": ["value", "confidence", "raw_text"]}
-NAMEPLATE_SCHEMA = {"type": "object", "properties": {k: VLM_FIELD for k in nameplate.FIELDS}, "required": nameplate.FIELDS}
 
 app = FastAPI(title="FieldCapture backend")
 
@@ -52,17 +48,25 @@ def voice_fields(meta):
     return fields
 
 
+def vlm_on():
+    return os.environ.get("FC_VLM") == "1"
+
+
+def with_vlm(fallback, cache, fn, *args):
+    if not vlm_on():
+        return fallback
+    try:
+        fields, raw = fn(*args, vlm=gemini.generate)
+        write_json(cache, raw)
+        return fields
+    except Exception as e:
+        print(f"vlm failed ({cache.name}): {e}")
+        return fallback
+
+
 def read_nameplate(photo, ocr, quality, cache):
     ml = nameplate.extract(ocr, quality)
-    if os.environ.get("FC_VLM") != "1":
-        return ml
-    try:
-        resp, model = gemini.generate(NAMEPLATE_PROMPT, NAMEPLATE_SCHEMA, photo, purpose=f"nameplate:{photo.parent.parent.name}/{photo.stem}")
-        write_json(cache, {"model": model, "response": resp})
-        return nameplate.combine(ml, nameplate.from_gemini(resp, quality, model))
-    except Exception as e:
-        print(f"vlm failed for {photo}: {e}")
-        return ml
+    return with_vlm(ml, cache, lambda *a, vlm: extract.nameplate_fields(*a, vlm=vlm), photo, ocr, quality)
 
 
 @app.post("/captures")
@@ -99,6 +103,8 @@ async def post_capture(meta: str = Form(...), photo: UploadFile = File(...)):
         if m.get("ocr"):
             write_json(d / f"{cid}.ocr.json", m["ocr"])
         rec["fields"].update(read_nameplate(photo_path, m.get("ocr"), rec["quality"], d / f"{cid}.vlm.json"))
+    elif m["type"] == "damage":
+        rec["fields"].update(with_vlm({}, d / f"{cid}.vlm.json", extract.damage_fields, photo_path, rec["quality"], m.get("room"), m.get("surface")))
     write_json(d / f"{cid}.json", rec)
     return JSONResponse({"status": "stored", "capture_id": cid}, 201)
 
@@ -109,12 +115,14 @@ async def post_note(n: dict):
     p = STORE / "jobs" / job / "notes" / f"{nid}.json"
     if p.exists():
         return JSONResponse({"status": "exists", "note_id": nid}, 200)
+    fields = {"needs_review": {"value": True, "confidence": 1.0, "source": "rule: spoken notes are error-prone in noise"}}
+    fields.update(with_vlm({}, p.with_suffix(".vlm.json"), extract.note_fields, n["text"]))
     write_json(p, {
         "note_id": nid,
         "taken_at": iso(n["taken_at"]),
         "text": n["text"],
         "voice_command": n.get("transcript"),
-        "fields": {"needs_review": {"value": True, "confidence": 1.0, "source": "rule: spoken notes are error-prone in noise"}},
+        "fields": fields,
     })
     return JSONResponse({"status": "stored", "note_id": nid}, 201)
 

@@ -1,0 +1,12 @@
+You are looking at a photo a restoration technician took of building damage.
+The technician said the room is "{room}" and the surface is "{surface}". Trust those; do not re-classify room or surface.
+
+Return:
+- damage_type: the main damage visible, one of water_stain, water_damage, mold, crack, hole, peeling_paint, swelling, none.
+  water_stain = discoloured but intact surface. water_damage = material is wet, sagging, collapsed, delaminated or rotted. mold = dark/green/grey fungal spots or patches.
+  Use none if no damage is visible.
+- size: width and height of the affected area in centimetres. Only estimate from a reference object of known size that is visible
+  (ceiling tile 61 cm, outlet cover 7x11 cm, door 80x200 cm, floor tile, brick, standard window). Name the reference you used, or "none".
+  If there is no reference, still give your best estimate but say "none".
+- confidence for each: your probability (0 to 1) that the answer is right. Size from a single photo is rough; be modest.
+- evidence: one short sentence on what in the image you based damage_type on.
