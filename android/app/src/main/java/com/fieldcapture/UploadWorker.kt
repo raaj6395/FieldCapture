@@ -67,7 +67,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
         .put("capture_ids", JSONArray(job.getJSONArray("captures").objs().map { it.getString("id") }))
         .put("note_ids", JSONArray(job.getJSONArray("notes").objs().map { it.getString("id") }))
         .put("events", JSONArray(events))
-    val code = post("/jobs/$jobId/finalize", body.toString())
+    val code = post("/jobs/$jobId/finalize", body.toString(), FINALIZE_TIMEOUT_MS)
     log("finalize $jobId -> $code")
     if (code != 200) return false
     File(dir, "finalized").writeText(System.currentTimeMillis().toString())
@@ -81,7 +81,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
     return true
   }
 
-  private fun post(path: String, json: String) = send(path, "application/json", json.toByteArray())
+  private fun post(path: String, json: String, readTimeout: Int = 30_000) = send(path, "application/json", json.toByteArray(), readTimeout)
 
   private fun multipart(path: String, meta: String, photo: File): Int {
     val b = "----fc" + UUID.randomUUID()
@@ -90,12 +90,12 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
     return send(path, "multipart/form-data; boundary=$b", head.toByteArray() + photo.readBytes() + "\r\n--$b--\r\n".toByteArray())
   }
 
-  private fun send(path: String, type: String, body: ByteArray): Int {
+  private fun send(path: String, type: String, body: ByteArray, readTimeout: Int = 30_000): Int {
     val c = URL(BuildConfig.BACKEND_URL + path).openConnection() as HttpURLConnection
     return try {
       c.requestMethod = "POST"
       c.connectTimeout = 10_000
-      c.readTimeout = 30_000
+      c.readTimeout = readTimeout
       c.doOutput = true
       c.setRequestProperty("Content-Type", type)
       c.setFixedLengthStreamingMode(body.size)
@@ -109,6 +109,8 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
   private fun log(msg: String) = Log.i("FC", "upload: $msg")
 
   companion object {
+    const val FINALIZE_TIMEOUT_MS = 120_000
+
     fun jobsRoot(ctx: Context) = File(ctx.getExternalFilesDir(null), "jobs")
 
     fun uploaded(dir: File) = File(dir, "uploaded.txt").takeIf { it.exists() }?.readLines()?.toSet().orEmpty()
