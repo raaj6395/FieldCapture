@@ -93,6 +93,14 @@ Driven with `tools/fc.sh` (adb broadcast -> same calls as the on-screen buttons,
 - Final transcripts only; parser is pure Kotlin (38 phrases in `CommandParserTest`).
 - **TTS echo**: in the mock the phone mic hears the phone speaker. "Resumed." came back as `Resume` 2.2-3.5 s later, longer than any sane mute window. Fix: mute while speaking + 0.5 s, and drop a final transcript that is contained in what we said in the last 6 s. Real glasses: speaker is centimetres from the mic, so the same filter is needed.
 - Too long a mute drops real commands (the e2e test caught this: command 2.5 s after "Ready." was dropped with a 1.5 s mute).
+- **Live recognition measured (one speaker, phone mic via `LIVE_DEVICE_ASR`, S22, about 1 m, normal pace).** Score = first attempt gives the right command and the right room/surface (for notes, the command only).
+  | Condition | Commands right | Note text exact | Notes |
+  |---|---|---|---|
+  | Quiet room, 20 commands (before fixes) | **15/20** | 3/4 | "capture nameplate" 2/4 ("name please", "Captain nameplate", "name hit"); "capture" misheard as "Captain"/"Capital" 4x; "basement subfloor" -> "basements of floor" |
+  | Fan/TV on, 10 commands (after fixes) | **7/10** | 0/2 | "water stain" -> "Water Street"; "drywall soft behind the toilet" -> "drywall behind soft wallet"; "garage wall" -> "garage volume"; "Note" heard as "No" |
+  - Commands (short, fixed words) hold up in noise; **free-text notes don't** -> notes are read back ("Noted: ...") and must be flagged for back-office review.
+  - ASR confidence on FINAL is always 0.0 -> useless as a signal (confirms Phase 0).
+  - Bugs found in the quiet run and fixed before the noisy run: (1) the reply "Paused. Say resume." contained the next command, so the echo filter ate the tech's real "resume" 3 times (echo arrives 2.8-4.5 s after our reply, a human answers 4-6 s after -> timing can't separate them; replies now never contain command words); (2) "Capture damage living" took the *last* room (bathroom) silently -> last room is only used when nothing else was said; (3) parser fixes "captain/capital" -> capture, "name please" -> nameplate, "basements" -> basement. These fixes were tuned on the quiet run, so the quiet 15/20 is the pre-fix number; the noisy 7/10 first-attempt score does not depend on them (one retry did: "Captain nameplate").
 - e2e instrumentation test (`VoiceE2ETest`): injected "capture nameplate", "Capture damage, kitchen, north wall.", a note, "capture damage ceiling" (room filled from last), chatter -> 3 captures + 1 note under one job. **Pass.**
 
 ### README draft - audio path
