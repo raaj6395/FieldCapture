@@ -26,9 +26,9 @@ object CommandParser {
   ).sortedByDescending { it.length }
 
   private val FIXES = listOf(
-      "name plate" to "nameplate", "name plates" to "nameplate", "nameplates" to "nameplate",
-      "captured" to "capture", "captures" to "capture", "capturing" to "capture", "capture the" to "capture",
-      "notes" to "note", "node" to "note", "sub floor" to "subfloor",
+      "name plate" to "nameplate", "name please" to "nameplate", "name plates" to "nameplate", "nameplates" to "nameplate",
+      "captured" to "capture", "captures" to "capture", "capturing" to "capture", "captain" to "capture", "capital" to "capture", "capture the" to "capture",
+      "notes" to "note", "node" to "note", "sub floor" to "subfloor", "basements" to "basement",
       "damaged" to "damage", "damages" to "damage", "celling" to "ceiling", "sealing" to "ceiling",
   )
 
