@@ -583,7 +583,6 @@ class JobSession(private val app: Application) {
   }
 
   private fun upright(bytes: ByteArray): Bitmap {
-    // ponytail: decodes full resolution; use inSampleSize (in Python too) if real-glasses stills are 12 MP
     val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
     val deg = when (ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
       ExifInterface.ORIENTATION_ROTATE_90 -> 90
