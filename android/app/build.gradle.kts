@@ -48,6 +48,7 @@ dependencies {
   implementation(libs.mwdat.speech)
   implementation(libs.mwdat.inputs)
   implementation(libs.androidx.work.runtime)
+  implementation(libs.mlkit.text.recognition)
   testImplementation(libs.junit)
   androidTestImplementation(libs.junit)
   androidTestImplementation(libs.androidx.test.runner)

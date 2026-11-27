@@ -7,6 +7,7 @@ mwdat = "1.1.0"
 lifecycle = "2.10.0"
 junit = "4.13.2"
 work = "2.10.1"
+mlkitText = "16.0.1"
 androidxTestRunner = "1.7.0"
 androidxTestExt = "1.3.0"
 
@@ -22,6 +23,7 @@ mwdat-mockdevice = { group = "com.meta.wearable", name = "mwdat-mockdevice", ver
 mwdat-speech = { group = "com.meta.wearable", name = "mwdat-speech", version.ref = "mwdat" }
 mwdat-inputs = { group = "com.meta.wearable", name = "mwdat-inputs", version.ref = "mwdat" }
 androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
+mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitText" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExt" }
