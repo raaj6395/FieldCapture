@@ -138,12 +138,11 @@ FINALIZE_WAIT_S = 90
 async def wait_extractions(job, ids, limit_s):
     d = STORE / "jobs" / job
     files = [f for i in ids for f in (d / "captures" / f"{i}.json", d / "notes" / f"{i}.json") if f.exists()]
-    for _ in range(limit_s * 2):
+    for i in range(limit_s * 2 + 1):
         pending = [f.stem for f in files if json.loads(f.read_text()).get("extraction") == "pending"]
-        if not pending:
-            return []
+        if not pending or i == limit_s * 2:
+            return pending
         await asyncio.sleep(0.5)
-    return pending
 
 
 @app.post("/notes")
