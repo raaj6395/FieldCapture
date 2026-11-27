@@ -82,13 +82,14 @@ fun JobScreen(js: JobSession, startJob: () -> Unit) {
   val state by js.state.collectAsStateWithLifecycle()
   val rev by js.rev.collectAsStateWithLifecycle()
   val listening by js.listening.collectAsStateWithLifecycle()
+  val queue by js.queue.collectAsStateWithLifecycle()
   val lines by js.lines.collectAsStateWithLifecycle()
   val job = js.job
   rev
 
   Column(Modifier.fillMaxSize().safeDrawingPadding().padding(8.dp)) {
     Text("Job ${job.id.ifEmpty { "-" }}  $state", fontSize = 22.sp, fontWeight = FontWeight.Bold)
-    Text("${job.captures.size} photos, ${job.notes.size} notes, mic ${if (listening) "on" else "off"}", fontSize = 14.sp)
+    Text("${job.captures.size} photos, ${job.notes.size} notes, mic ${if (listening) "on" else "off"}, queue $queue pending", fontSize = 14.sp)
     FlowRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
       Button(onClick = startJob) { Text("Start job") }
       Button(onClick = js::pause) { Text("Pause") }

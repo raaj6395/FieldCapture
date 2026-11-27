@@ -75,6 +75,7 @@ class JobSession(private val app: Application) {
   val state = MutableStateFlow(JobState.IDLE)
   val rev = MutableStateFlow(0)
   val listening = MutableStateFlow(false)
+  val queue = MutableStateFlow(0)
   val lines = MutableStateFlow<List<String>>(emptyList())
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -151,6 +152,23 @@ class JobSession(private val app: Application) {
       }
     }
     restore()
+    refreshQueue()
+    UploadWorker.kick(app)
+  }
+
+  fun refreshQueue() {
+    queue.value = jobsRoot().listFiles().orEmpty().sumOf { dir ->
+      val f = File(dir, "session.json")
+      if (!f.exists()) return@sumOf 0
+      val o = JSONObject(f.readText())
+      val ids = (o.getJSONArray("captures").objs() + o.getJSONArray("notes").objs()).map { it.getString("id") }
+      (ids - UploadWorker.uploaded(dir)).size
+    }
+  }
+
+  private fun queueUpload() {
+    refreshQueue()
+    UploadWorker.kick(app)
   }
 
   private fun mockSetup() {
@@ -246,6 +264,7 @@ class JobSession(private val app: Application) {
         connectJob?.cancel()
         release()
         app.stopService(Intent(app, JobService::class.java))
+        queueUpload()
       }
       JobState.IDLE -> Unit
     }
@@ -482,6 +501,7 @@ class JobSession(private val app: Application) {
         if (!job.open) return say("No job.")
         job.notes += Note("n${job.notes.size + 1}", System.currentTimeMillis(), cmd.text, transcript ?: cmd.text, conf)
         persist()
+        queueUpload()
         say("Noted: ${cmd.text}.")
       }
       Command.Start -> startJob()
@@ -535,6 +555,7 @@ class JobSession(private val app: Application) {
             b.scores, b.reasons, attempts, flag)
         lastShot = shot
         persist()
+        queueUpload()
         log("captured $id ${shot.kind} quality=$flag ${b.reasons} after $attempts shots, ${file.length() / 1024}KB in ${SystemClock.elapsedRealtime() - t}ms")
         say(reply(shot) + if (flag == "low") " Saved, low quality." else "")
       }
@@ -629,7 +650,7 @@ class JobSession(private val app: Application) {
     g.services.speech.simulateTranscription(text, true, 0.9f)
   }
 
-  private fun jobsRoot() = File(app.getExternalFilesDir(null), "jobs")
+  private fun jobsRoot() = UploadWorker.jobsRoot(app)
 
   private fun jobDir() = File(jobsRoot(), job.id).apply { mkdirs() }
 
@@ -668,7 +689,6 @@ class JobSession(private val app: Application) {
     val o = JSONObject(f.readText())
     fun JSONObject.str(k: String) = if (isNull(k)) null else getString(k)
     fun JSONObject.flt(k: String) = if (isNull(k)) null else getDouble(k).toFloat()
-    fun JSONArray.objs() = (0 until length()).map { getJSONObject(it) }
     job.id = o.getString("job_id")
     job.state = JobState.valueOf(o.getString("state"))
     job.pausedBeforeDrop = o.getBoolean("paused_before_drop")
