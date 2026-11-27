@@ -122,14 +122,15 @@ Method (`tools/tune_thresholds.py --write`): per check, pick the threshold on th
 | nameplate blur | 70.7 | 100% / 0% |
 | damage blur | 5.6 | 100% / 0% |
 | nameplate glare_frac | 0.32 | 100% / 0% |
-| nameplate cut_off | off (null) | best fit caught 58% but rejected 3/13 good eval plates and the user's sharp Razer label: text touching the frame edge is also what a well-filled close-up looks like, and a false reject ends in a "low" capture whose line items all go to review |
+| nameplate border_edge_frac | off (null) | edge pixels in the border band caught 58% but rejected 3/13 good eval plates and the user's sharp Razer label: a well-filled close-up looks the same |
+| nameplate text_edge_margin | 0.03 | an ML Kit line (3+ chars) within 3% of the edge: 100% / 8% (the one rejected tune plate, web_np_06, is labelled badly framed). All margins 0.5-5% tie on tune; 3% is the middle |
 
 End-to-end with shipped thresholds:
 
 | set | good passed | dark | blurry | glare | cut_off |
 |---|---|---|---|---|---|
-| web nameplate, tune | 12/12 | 12/12 | 12/12 | 12/12 | 0/12 (off) |
-| web nameplate, eval | 12/13 (Luftwerk black plate -> dark) | 13/13 | 13/13 | 12/13 | 3/13 flagged for other reasons |
+| web nameplate, tune | 11/12 (web_np_06 -> cut_off, labelled badly framed) | 12/12 | 12/12 | 12/12 | 12/12 |
+| web nameplate, eval | 11/13 (web_np_07 dark + cut_off, labelled badly framed; web_np_09 cut_off) | 13/13 | 13/13 | 12/13 | 11/13 (10 for the cut_off reason) |
 | web damage, tune | 9/9 | 9/9 | 9/9 | 0/9 (not checked for damage) | - |
 | web damage, eval | 9/9 | 8/8 | 8/8 | 0/8 | - |
 | user phone photos | 5/5 | - | 2/3 (dim out-of-focus logo passes at blur 94) | - | - |

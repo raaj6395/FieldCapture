@@ -66,7 +66,7 @@ The DAT speech service works in Developer Mode, so commands use the glasses' spe
 
 ## Capture quality check (on the phone)
 
-Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quality.py`, checked equal to 4 decimals by a unit test): Laplacian variance (blur), mean luma (dark), saturated pixels in the centre (glare), edge density (nothing in view), edge share in the border band (cut off). A blurry-only failure triggers up to 2 silent extra shots; otherwise the tech hears one prompt ("Too dark. Turn on your light.", "Blurry. Hold still.", "Glare. Tilt a little.", "Nothing in view.") and gets 2 retakes before the photo is kept and marked `low` - the app never blocks the walk.
+Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quality.py`, checked equal to 4 decimals by a unit test): Laplacian variance (blur), mean luma (dark), saturated pixels in the centre (glare), edge density (nothing in view), and for nameplates an ML Kit text line touching the frame edge (cut off). The OCR that runs for the check (median 71 ms at 640 px) is the same result uploaded as the on-device reader, so it costs no second pass. A blurry-only failure triggers up to 2 silent extra shots; otherwise the tech hears one prompt ("Too dark. Turn on your light.", "Blurry. Hold still.", "Glare. Tilt a little.", "Cut off. Step back.", "Nothing in view.") and gets 2 retakes before the photo is kept and marked `low` - the app never blocks the walk.
 
 | check | threshold | how it was picked |
 |---|---|---|
@@ -75,7 +75,7 @@ Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quali
 | damage blur | < 5.6 | damage texture is soft by nature; 0 false rejects |
 | nameplate glare | > 32% of centre saturated | 100% of glare copies caught, 0% false rejects |
 | nothing in view | edge density < 0.01 | default, not tuned |
-| cut off | **off** | best fit caught 58% of cut-off copies but rejected 3/13 good plates and the tech's sharp label: text touching the frame edge is also what a well-filled close-up looks like (see Known limitations) |
+| nameplate cut off | an OCR line of 3+ characters within 3% of the frame edge | tune split: 12/12 cut-off copies caught, 1/12 plates rejected (web_np_06, which is labelled badly framed); eval split: 11/13 caught, 1 false reject (web_np_09); our own phone photos 001-011: 0 flagged (012-018, a product page shot off a monitor with words running off the frame, are flagged). Every margin from 0.5% to 5% tied on tune, 3% is the middle. The first attempt, edge pixels in the border band, could not tell a cut-off plate from a well-filled close-up (58% caught, 3/13 good plates rejected) |
 
 `tools/tune_thresholds.py` reproduces the table. Thresholds are still marked provisional: they were tuned on web photos + synthetic variants + 8 of our own phone photos, not on frames from real glasses.
 
@@ -116,7 +116,7 @@ Full report: `eval/REPORT.md`. **These numbers come from openly licensed web pho
 ## Known limitations
 
 - **Test set is not our own captures yet.** The rules require it; the eval pipeline is ready, the frames are not shot. Reported numbers are a development set.
-- **Cut-off framing check is switched off** (requirement 3 lists it). The "nothing in view" check runs; edge-based cut-off detection could not separate a cut-off plate from a well-filled close-up on our data. Next: detect the plate rectangle and check its corners are inside the frame.
+- **Cut-off is only checked for nameplates**, from OCR text touching the edge. A plate with no readable text, or a damage photo, is never flagged as cut off. Cut-off copies in the test data are synthetic crops.
 - **Damage-type confidence is not calibrated** (see Results). Damage line items should be reviewed until a second signal exists.
 - Not run on real glasses. On the mock: injected speech stops working after a reconnect in 11/13 tries (live mic is unaffected); the mock gives 640x480 stills; ASR final confidence is always 0.0, so we do not gate on it.
 - Size from a single photo is a model estimate (stretch A not done). Notes in noise garble.
@@ -135,7 +135,7 @@ Full report: `eval/REPORT.md`. **These numbers come from openly licensed web pho
 
 1. Shoot and label the 40+ own-frame test set from real jobs, then retune thresholds on glasses frames and drop `provisional`.
 2. Damage: multi-label output with top-2 probabilities (margin as confidence), and a reference-object size estimate.
-3. Cut-off check from the detected plate rectangle; crop the plate before the model call (fewer tokens, better OCR).
+3. Cut-off check for damage photos (stain mask touching the edge); crop the plate to its OCR box before the model call (fewer tokens, better OCR).
 4. Paid-tier quota without the 13 s spacing; parallel extraction for offline bursts.
 5. Week-one field test with five techs (usable-frame rate, retakes per job, voice error rate, disconnects per hour, battery per hour, back-office edits per record).
 
