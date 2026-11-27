@@ -115,7 +115,8 @@ Full report: `eval/REPORT.md`. **These numbers come from openly licensed web pho
 - **Damage-type confidence is not calibrated** (see Results). Damage line items should be reviewed until a second signal exists.
 - Not run on real glasses. On the mock: injected speech stops working after a reconnect in 11/13 tries (live mic is unaffected); the mock gives 640x480 stills; ASR final confidence is always 0.0, so we do not gate on it.
 - Size from a single photo is a model estimate (stretch A not done). Notes in noise garble.
-- Demo video, three final sample walk-throughs, fresh-clone setup timing and the stage-latency table for a real walk (`tools/cost_latency.py`) still need a recording session with the final build.
+- Fresh clone following this README on the dev Mac: backend installed, 26 tests passing and the APK built in 32 s, but with warm pip and Gradle caches; a cold machine also downloads Gradle and the dependencies (not timed).
+- Demo video, three final sample walk-throughs and the stage-latency table for a real walk (`tools/cost_latency.py`) still need a recording session with the final build.
 - Backend has no auth and runs extraction inside the upload request.
 
 ## What we cut and why
