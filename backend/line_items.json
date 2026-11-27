@@ -1,0 +1,15 @@
+[
+  {"code": "DRY-RR", "description": "Remove and replace drywall", "unit": "sq ft"},
+  {"code": "DRY-PATCH", "description": "Patch drywall (small area under 2 sq ft)", "unit": "each"},
+  {"code": "CLG-RR", "description": "Remove and replace ceiling drywall", "unit": "sq ft"},
+  {"code": "PNT-WALL", "description": "Seal (stain-block) and paint wall", "unit": "sq ft"},
+  {"code": "PNT-CLG", "description": "Seal and paint ceiling", "unit": "sq ft"},
+  {"code": "BASE-RR", "description": "Remove and replace baseboard", "unit": "lin ft"},
+  {"code": "SUBF-RR", "description": "Remove and replace subfloor", "unit": "sq ft"},
+  {"code": "INS-RR", "description": "Remove and replace insulation", "unit": "sq ft"},
+  {"code": "MOLD-TRT", "description": "Antimicrobial / mould treatment", "unit": "sq ft"},
+  {"code": "DRY-EQ", "description": "Dehumidifier + air mover, per day", "unit": "day"},
+  {"code": "CAB-DR", "description": "Detach and reset cabinet", "unit": "each"},
+  {"code": "WH-RPL", "description": "Replace water heater", "unit": "each"},
+  {"code": "INSP-REV", "description": "Needs human review (unclear observation)", "unit": "each"}
+]

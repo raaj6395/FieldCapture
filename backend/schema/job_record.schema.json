@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fieldcapture/job_record/1.0",
+  "title": "FieldCapture job record",
+  "type": "object",
+  "required": ["schema_version", "job_id", "tech_id", "status", "started_at", "ended_at", "device", "session_events", "captures", "notes", "line_items", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "job_id": {"type": "string", "minLength": 1},
+    "tech_id": {"type": "string", "minLength": 1},
+    "status": {"enum": ["complete", "partial"]},
+    "missing": {"type": "array", "items": {"type": "string"}},
+    "started_at": {"type": "string", "format": "date-time"},
+    "ended_at": {"type": ["string", "null"], "format": "date-time"},
+    "device": {
+      "type": "object",
+      "required": ["type", "sdk_version"],
+      "properties": {"type": {"enum": ["mock", "glasses"]}, "sdk_version": {"type": "string"}}
+    },
+    "session_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["type", "at"],
+        "properties": {
+          "type": {"enum": ["start", "connected", "pause", "resume", "disconnect", "reconnect", "stop", "device"]},
+          "at": {"type": "string", "format": "date-time"},
+          "transition": {"type": "string"},
+          "cause": {"type": "string"}
+        }
+      }
+    },
+    "captures": {"type": "array", "items": {"$ref": "#/$defs/capture"}},
+    "notes": {"type": "array", "items": {"$ref": "#/$defs/note"}},
+    "line_items": {"type": "array", "items": {"$ref": "#/$defs/line_item"}},
+    "summary": {
+      "type": "object",
+      "required": ["captures", "notes", "low_quality", "needs_review", "upload_delay_s_max"],
+      "properties": {
+        "captures": {"type": "integer", "minimum": 0},
+        "notes": {"type": "integer", "minimum": 0},
+        "low_quality": {"type": "integer", "minimum": 0},
+        "needs_review": {"type": "integer", "minimum": 0},
+        "upload_delay_s_max": {"type": ["number", "null"]}
+      }
+    }
+  },
+  "$defs": {
+    "field": {
+      "type": "object",
+      "required": ["value", "confidence"],
+      "properties": {
+        "value": {},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "source": {"type": "string"},
+        "raw_text": {"type": ["string", "null"]}
+      }
+    },
+    "capture": {
+      "type": "object",
+      "required": ["capture_id", "type", "taken_at", "photo", "voice_command", "quality", "fields"],
+      "properties": {
+        "capture_id": {"type": "string"},
+        "type": {"enum": ["nameplate", "damage"]},
+        "taken_at": {"type": "string", "format": "date-time"},
+        "received_at": {"type": "string", "format": "date-time"},
+        "photo": {"type": "string"},
+        "voice_command": {"type": ["string", "null"]},
+        "asr_confidence": {"type": ["number", "null"]},
+        "retake_of": {"type": ["string", "null"]},
+        "quality": {
+          "type": "object",
+          "required": ["passed", "flag", "attempts", "scores", "failed_checks"],
+          "properties": {
+            "passed": {"type": "boolean"},
+            "flag": {"enum": ["ok", "low", "unchecked"]},
+            "attempts": {"type": "integer", "minimum": 1},
+            "scores": {"type": ["object", "null"]},
+            "failed_checks": {"type": "array", "items": {"enum": ["dark", "blurry", "glare", "empty", "cut_off"]}}
+          }
+        },
+        "fields": {"type": "object", "additionalProperties": {"$ref": "#/$defs/field"}}
+      }
+    },
+    "note": {
+      "type": "object",
+      "required": ["note_id", "taken_at", "text", "fields"],
+      "properties": {
+        "note_id": {"type": "string"},
+        "taken_at": {"type": "string", "format": "date-time"},
+        "text": {"type": "string"},
+        "voice_command": {"type": ["string", "null"]},
+        "fields": {"type": "object", "additionalProperties": {"$ref": "#/$defs/field"}}
+      }
+    },
+    "line_item": {
+      "type": "object",
+      "required": ["code", "description", "unit", "qty", "qty_basis", "source_ids", "confidence", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "code": {"enum": ["DRY-RR", "DRY-PATCH", "CLG-RR", "PNT-WALL", "PNT-CLG", "BASE-RR", "SUBF-RR", "INS-RR", "MOLD-TRT", "DRY-EQ", "CAB-DR", "WH-RPL", "INSP-REV"]},
+        "description": {"type": "string"},
+        "unit": {"enum": ["sq ft", "lin ft", "each", "day"]},
+        "qty": {"type": "number", "exclusiveMinimum": 0},
+        "qty_basis": {"enum": ["measured", "estimated", "default"]},
+        "room": {"type": ["string", "null"]},
+        "source_ids": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "status": {"enum": ["draft", "needs_review", "suggested"]},
+        "reason": {"type": "string"}
+      }
+    }
+  }
+}
