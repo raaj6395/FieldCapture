@@ -72,6 +72,7 @@
         "asr_confidence": {"type": ["number", "null"]},
         "retake_of": {"type": ["string", "null"]},
         "timing": {"type": "object", "additionalProperties": {"type": "integer"}},
+        "extraction": {"enum": ["pending", "done"]},
         "quality": {
           "type": "object",
           "required": ["passed", "flag", "attempts", "scores", "failed_checks"],
@@ -94,6 +95,7 @@
         "taken_at": {"type": "string", "format": "date-time"},
         "text": {"type": "string"},
         "voice_command": {"type": ["string", "null"]},
+        "extraction": {"enum": ["pending", "done"]},
         "fields": {"type": "object", "additionalProperties": {"$ref": "#/$defs/field"}}
       }
     },

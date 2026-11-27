@@ -11,9 +11,10 @@ STAGES = [("cmd", "shot", "voice command -> photo passed quality check (incl. re
           ("shot", "saved", "on-device OCR + save to disk"),
           ("saved", "upload_start", "queue wait before upload"),
           ("upload_start", "received", "upload (phone -> server, includes clock skew)"),
-          ("received", "extract_done", "extraction (model call)"),
-          ("extract_done", "stored", "write capture record"),
-          ("cmd", "stored", "END TO END: voice command -> capture stored with fields")]
+          ("received", "stored", "server stores photo + record (the phone's request ends here)"),
+          ("received", "extract_done", "received -> fields extracted"),
+          ("extract_start", "extract_done", "extraction (model call incl. free-tier spacing and retries)"),
+          ("cmd", "extract_done", "END TO END: voice command -> capture has its extracted fields")]
 
 
 def cost(call):

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -5,7 +6,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import jsonschema
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import extract
@@ -74,7 +75,7 @@ def now_ms():
 
 
 @app.post("/captures")
-async def post_capture(meta: str = Form(...), photo: UploadFile = File(...)):
+async def post_capture(background: BackgroundTasks, meta: str = Form(...), photo: UploadFile = File(...)):
     received = now_ms()
     m = json.loads(meta)
     job, cid = safe(m["job_id"]), safe(m["capture_id"])
@@ -104,35 +105,70 @@ async def post_capture(meta: str = Form(...), photo: UploadFile = File(...)):
         },
         "fields": voice_fields(m),
     }
-    timing = dict(m.get("timing") or {}, received=received, extract_start=now_ms())
     if m["type"] == "nameplate":
         if m.get("ocr"):
             write_json(d / f"{cid}.ocr.json", m["ocr"])
-        rec["fields"].update(read_nameplate(photo_path, m.get("ocr"), rec["quality"], d / f"{cid}.vlm.json"))
-    elif m["type"] == "damage":
-        rec["fields"].update(with_vlm({}, d / f"{cid}.vlm.json", extract.damage_fields, photo_path, rec["quality"], m.get("room"), m.get("surface")))
-    timing["extract_done"] = now_ms()
-    rec["timing"] = dict(timing, stored=now_ms())
+        rec["fields"].update(nameplate.extract(m.get("ocr"), rec["quality"]))
+    rec["timing"] = dict(m.get("timing") or {}, received=received, stored=now_ms())
+    rec["extraction"] = "pending" if vlm_on() else "done"
     write_json(d / f"{cid}.json", rec)
+    if vlm_on():
+        background.add_task(run_extraction, d, cid, m, photo_path)
     return JSONResponse({"status": "stored", "capture_id": cid}, 201)
 
 
+def run_extraction(d, cid, m, photo_path):
+    path = d / f"{cid}.json"
+    rec = json.loads(path.read_text())
+    start = now_ms()
+    try:
+        if m["type"] == "nameplate":
+            rec["fields"].update(read_nameplate(photo_path, m.get("ocr"), rec["quality"], d / f"{cid}.vlm.json"))
+        elif m["type"] == "damage":
+            rec["fields"].update(with_vlm({}, d / f"{cid}.vlm.json", extract.damage_fields, photo_path, rec["quality"], m.get("room"), m.get("surface")))
+    finally:
+        rec["timing"].update(extract_start=start, extract_done=now_ms())
+        rec["extraction"] = "done"
+        write_json(path, rec)
+
+
+async def wait_extractions(job, ids, limit_s=90):
+    d = STORE / "jobs" / job
+    files = [f for i in ids for f in (d / "captures" / f"{i}.json", d / "notes" / f"{i}.json") if f.exists()]
+    for _ in range(limit_s * 2):
+        pending = [f.stem for f in files if json.loads(f.read_text()).get("extraction") == "pending"]
+        if not pending:
+            return []
+        await asyncio.sleep(0.5)
+    return pending
+
+
 @app.post("/notes")
-async def post_note(n: dict):
+async def post_note(n: dict, background: BackgroundTasks):
     job, nid = safe(n["job_id"]), safe(n["note_id"])
     p = STORE / "jobs" / job / "notes" / f"{nid}.json"
     if p.exists():
         return JSONResponse({"status": "exists", "note_id": nid}, 200)
-    fields = {"needs_review": {"value": True, "confidence": 1.0, "source": "rule: spoken notes are error-prone in noise"}}
-    fields.update(with_vlm({}, p.with_suffix(".vlm.json"), extract.note_fields, n["text"]))
     write_json(p, {
         "note_id": nid,
         "taken_at": iso(n["taken_at"]),
         "text": n["text"],
         "voice_command": n.get("transcript"),
-        "fields": fields,
+        "fields": {"needs_review": {"value": True, "confidence": 1.0, "source": "rule: spoken notes are error-prone in noise"}},
+        "extraction": "pending" if vlm_on() else "done",
     })
+    if vlm_on():
+        background.add_task(run_note_extraction, p, n["text"])
     return JSONResponse({"status": "stored", "note_id": nid}, 201)
+
+
+def run_note_extraction(p, text):
+    rec = json.loads(p.read_text())
+    try:
+        rec["fields"].update(with_vlm({}, p.with_suffix(".vlm.json"), extract.note_fields, text))
+    finally:
+        rec["extraction"] = "done"
+        write_json(p, rec)
 
 
 EVENT_TYPES = {"IDLE->CONNECTING": "start", "STOPPED->CONNECTING": "start", "CONNECTING->ACTIVE": "connected", "ACTIVE->PAUSED": "pause",
@@ -190,6 +226,7 @@ def build_record(job, body):
 
 @app.post("/jobs/{job_id}/finalize")
 async def finalize(job_id: str, body: dict):
+    await wait_extractions(safe(job_id), body.get("capture_ids", []) + body.get("note_ids", []))
     rec = build_record(safe(job_id), body)
     write_json(STORE / "jobs" / job_id / "job_record.json", rec)
     return rec

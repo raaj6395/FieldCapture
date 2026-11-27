@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import os
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -18,6 +19,9 @@ DEFAULT_CAP = 18
 MIN_GAP_S = 13
 RETRY_503_S = 20
 URL = "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent"
+
+
+LOCK = threading.Lock()
 
 
 class QuotaGuard(Exception):
@@ -91,6 +95,11 @@ def log(entry):
 
 
 def generate(prompt, schema, image=None, purpose="", models=MODELS):
+    with LOCK:
+        return _generate(prompt, schema, image, purpose, models)
+
+
+def _generate(prompt, schema, image, purpose, models):
     parts = [{"text": prompt}]
     size = None
     if image is not None:

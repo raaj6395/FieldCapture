@@ -46,3 +46,23 @@ def test_room_and_surface_are_passed_to_the_prompt():
 
     extract.damage_fields("p.jpg", {"flag": "ok"}, "kitchen", "north wall", vlm=vlm)
     assert '"kitchen"' in seen["p"] and '"north wall"' in seen["p"]
+
+
+def test_upload_returns_before_extraction_and_finalize_sees_fields(tmp_path, monkeypatch):
+    import json as _json
+
+    from fastapi.testclient import TestClient
+
+    import app as backend
+    monkeypatch.setattr(backend, "STORE", tmp_path)
+    monkeypatch.setenv("FC_VLM", "1")
+    monkeypatch.setattr(backend.gemini, "generate", lambda *a, **k: (dmg(), "fake"))
+    c = TestClient(backend.app)
+    meta = {"job_id": "J5", "capture_id": "c01", "type": "damage", "taken_at": 1795700000000, "room": "kitchen", "surface": "ceiling",
+            "quality": {"flag": "ok"}, "timing": {"cmd": 1795700000000}}
+    assert c.post("/captures", data={"meta": _json.dumps(meta)}, files={"photo": ("c01.jpg", b"\xff\xd8x", "image/jpeg")}).status_code == 201
+    r = c.post("/jobs/J5/finalize", json={"started_at": 1795700000000, "capture_ids": ["c01"], "note_ids": [], "events": []})
+    assert r.status_code == 200, r.text
+    cap = r.json()["captures"][0]
+    assert cap["extraction"] == "done" and cap["fields"]["damage_type"]["value"] == "water_stain"
+    assert {"received", "stored", "extract_start", "extract_done", "cmd"} <= set(cap["timing"])
