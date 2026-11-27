@@ -46,6 +46,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
           .put("transcript", c.opt("transcript")).put("asr_confidence", c.opt("asr_confidence")).put("retake_of", c.opt("retake_of"))
           .put("quality", JSONObject().put("flag", c.optString("quality_flag", "unchecked")).put("attempts", c.optInt("attempts", 1))
               .put("reasons", c.optJSONArray("quality_reasons") ?: JSONArray()).put("scores", c.opt("quality")))
+      File(dir, "$id.ocr.json").takeIf { it.exists() }?.let { meta.put("ocr", JSONObject(it.readText())) }
       val code = multipart("/captures", meta.toString(), File(dir, c.getString("file")))
       ok = mark(dir, id, code) && ok
     }

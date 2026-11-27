@@ -126,6 +126,7 @@ class JobSession(private val app: Application) {
             a == "resume" -> resume()
             a == "stop" -> stopJob()
             a.startsWith("say:") -> inject(a.removePrefix("say:"))
+            a.startsWith("ocr:") -> ocrEval(File(a.removePrefix("ocr:")))
             else -> mock(a)
           }
         }
@@ -550,6 +551,11 @@ class JobSession(private val app: Application) {
         val b = best ?: return@launch say("Photo failed. Say retake.")
         val id = "c%02d".format(job.captures.size + 1)
         val file = File(jobDir(), "$id.${b.ext}").apply { writeBytes(b.bytes) }
+        if (shot.kind == "nameplate") {
+          runCatching { withContext(Dispatchers.Default) { Ocr.read(upright(b.bytes)) } }
+              .onSuccess { o -> File(jobDir(), "$id.ocr.json").writeText(o.toString()); log("ocr $id: ${o.getJSONArray("lines").length()} lines in ${o.getLong("ms")}ms") }
+              .onFailure { log("ocr $id FAILED: $it") }
+        }
         val flag = if (b.reasons.isEmpty()) "ok" else "low"
         job.captures += Capture(id, shot.kind, System.currentTimeMillis(), file.name, shot.room, shot.surface, shot.unrecognised, transcript, conf, retakeOf,
             b.scores, b.reasons, attempts, flag)
@@ -579,6 +585,21 @@ class JobSession(private val app: Application) {
       val px = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
       val scores = Quality.score(px, bmp.width, bmp.height, thresholds)
       Attempt(bytes, ext, scores, Quality.verdict(scores, kind, thresholds))
+    }
+  }
+
+  private fun ocrEval(dir: File) {
+    scope.launch(Dispatchers.Default) {
+      val out = File(app.getExternalFilesDir(null), "ocr_eval").apply { mkdirs() }
+      val files = dir.listFiles().orEmpty().filter { it.extension.lowercase() in setOf("jpg", "jpeg", "png") }.sortedBy { it.name }
+      log("ocr eval: ${files.size} images in $dir")
+      for (f in files) {
+        val full = upright(f.readBytes())
+        val res = JSONObject().put("file", f.name).put("full", Ocr.read(full)).put("640", Ocr.read(Ocr.fit(full, 640)))
+        File(out, f.nameWithoutExtension + ".json").writeText(res.toString())
+        log("ocr ${f.name}: full ${res.getJSONObject("full").getLong("ms")}ms ${res.getJSONObject("full").getJSONArray("lines").length()} lines, 640 ${res.getJSONObject("640").getLong("ms")}ms ${res.getJSONObject("640").getJSONArray("lines").length()} lines")
+      }
+      log("ocr eval done")
     }
   }
 
