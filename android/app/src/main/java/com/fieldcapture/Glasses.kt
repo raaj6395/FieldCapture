@@ -87,7 +87,7 @@ fun GlassesView(js: JobSession, state: JobState) {
         Box(Modifier.size(8.dp).clip(CircleShape).background(if (live) Fc.bad else Fc.muted))
         Text(if (live) "Recording" else "Glasses camera", style = Fc.label.copy(color = Fc.text))
       }
-      if (g != null) {
+      if (g != null && g.battery >= 0) {
         Text("${g.battery}%", style = Fc.meta.copy(color = if (g.battery < 15) Fc.amber else Fc.text),
             modifier = Modifier.align(Alignment.TopEnd).padding(12.dp).clip(Fc.rSmall).background(Color.Black.copy(alpha = 0.55f)).padding(horizontal = 10.dp, vertical = 6.dp))
       }
@@ -133,7 +133,7 @@ fun GlassesSimulator(js: JobSession, state: JobState) {
       Box(Modifier.padding(start = 16.dp)) { Hairline() }
       Toggle("Overheated", g?.hot == true) { js.mock(if (it) "hot" else "cool") }
       Box(Modifier.padding(start = 16.dp)) { Hairline() }
-      Toggle("Battery low", g != null && g.battery < 15) { js.mock(if (it) "battery10" else "battery80") }
+      Toggle("Battery low", g != null && g.battery in 0 until 15) { js.mock(if (it) "battery10" else "battery80") }
     }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
       SecondaryButton("Tap touchpad", { js.mock("tap") }, Modifier.weight(1f))

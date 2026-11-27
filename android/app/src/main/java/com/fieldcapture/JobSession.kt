@@ -150,7 +150,10 @@ class JobSession(private val app: Application) {
           if (job.state == JobState.ACTIVE || job.state == JobState.PAUSED) transition(Ev.LOST, "device gone")
           return@collectLatest
         }
-        Wearables.devicesMetadata[id]?.collect(::onDevice) ?: run { deviceReady.value = true }
+        Wearables.devicesMetadata[id]?.collect(::onDevice) ?: run {
+          deviceReady.value = true
+          glassesInfo.value = GlassesInfo(-1, worn = true, open = true, hot = false)
+        }
       }
     }
     scope.launch {
@@ -201,7 +204,18 @@ class JobSession(private val app: Application) {
     )
   }
 
+  fun glassesProblem(): String? {
+    val g = glassesInfo.value
+    return when {
+      g == null -> "Glasses are off. Turn them on first."
+      !g.open -> "Glasses are folded. Open them first."
+      !g.worn -> "Put the glasses on first."
+      else -> null
+    }
+  }
+
   fun startJob() {
+    if (!job.open) glassesProblem()?.let { log("start refused: $it"); return say(it) }
     if (!transition(Ev.START, "start job")) return say("Job already running.")
     attempt = 0
     say("Job started.")

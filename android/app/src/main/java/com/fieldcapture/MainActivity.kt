@@ -145,6 +145,8 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
   val glasses by js.deviceReady.collectAsStateWithLifecycle()
   val queue by js.queue.collectAsStateWithLifecycle()
   val lines by js.lines.collectAsStateWithLifecycle()
+  val glassesInfo by js.glassesInfo.collectAsStateWithLifecycle()
+  val blocked = remember(glassesInfo) { js.glassesProblem() }
   val job = js.job
   val ctx = LocalContext.current
   val past = remember(rev, state) { jobSummaries(ctx).filter { it.id != job.id || state == JobState.STOPPED }.take(5) }
@@ -189,10 +191,14 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
             }
           }
           when (state) {
-            JobState.IDLE -> PrimaryButton("Start job", startJob, Modifier.fillMaxWidth())
+            JobState.IDLE -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              PrimaryButton("Start job", startJob, Modifier.fillMaxWidth(), enabled = blocked == null)
+              blocked?.let { Text(it, style = Fc.label) }
+            }
             JobState.STOPPED -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
               PrimaryButton("Review job ${job.id}", { openReview(job.id) }, Modifier.fillMaxWidth())
-              SecondaryButton("Start new job", startJob, Modifier.fillMaxWidth())
+              SecondaryButton("Start new job", startJob, Modifier.fillMaxWidth(), enabled = blocked == null)
+              blocked?.let { Text(it, style = Fc.label) }
             }
             JobState.ACTIVE -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               SecondaryButton("Pause", js::pause, Modifier.weight(1f))

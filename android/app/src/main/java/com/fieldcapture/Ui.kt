@@ -97,16 +97,16 @@ object Lucide {
 fun FcIcon(v: ImageVector, tint: Color = Fc.muted, size: Dp = 18.dp) = Icon(v, contentDescription = null, tint = tint, modifier = Modifier.size(size))
 
 @Composable
-fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) =
-    Button(onClick, modifier.heightIn(min = 56.dp), shape = Fc.rControl,
-        colors = ButtonDefaults.buttonColors(containerColor = Fc.amber, contentColor = Fc.onAmber)) {
+fun PrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) =
+    Button(onClick, modifier.heightIn(min = 56.dp), enabled = enabled, shape = Fc.rControl,
+        colors = ButtonDefaults.buttonColors(containerColor = Fc.amber, contentColor = Fc.onAmber, disabledContainerColor = Fc.raised, disabledContentColor = Fc.muted)) {
       Text(text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
     }
 
 @Composable
-fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, color: Color = Fc.text) =
-    Button(onClick, modifier.heightIn(min = 56.dp).border(1.dp, Fc.hairline, Fc.rControl), shape = Fc.rControl,
-        colors = ButtonDefaults.buttonColors(containerColor = Fc.raised, contentColor = color)) {
+fun SecondaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, color: Color = Fc.text, enabled: Boolean = true) =
+    Button(onClick, modifier.heightIn(min = 56.dp).border(1.dp, Fc.hairline, Fc.rControl), enabled = enabled, shape = Fc.rControl,
+        colors = ButtonDefaults.buttonColors(containerColor = Fc.raised, contentColor = color, disabledContainerColor = Fc.raised, disabledContentColor = Fc.muted)) {
       Text(text, fontSize = 16.sp, fontWeight = FontWeight.Medium)
     }
 
