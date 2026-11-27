@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "Canon",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": "K30278",
+  "confidence": 1.0
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9
+ }
+}

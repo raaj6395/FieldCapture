@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "Luftwerk",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": "platinline51-1,30kW-3ph",
+  "confidence": 1.0
+ },
+ "serial": {
+  "value": "201920185_20190522_1",
+  "confidence": 1.0
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "O.C. Electronics, Inc.",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9
+ }
+}

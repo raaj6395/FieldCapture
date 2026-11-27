@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "Rheem",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": "PROER 12 RH5",
+  "confidence": 0.95
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "appliance": {
+  "value": "water_heater",
+  "confidence": 1.0
+ }
+}

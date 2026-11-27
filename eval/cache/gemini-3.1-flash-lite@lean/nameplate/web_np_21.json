@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "ALSTOM",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "serial": {
+  "value": "KZAAT0048",
+  "confidence": 1.0
+ },
+ "mfg_date": {
+  "value": "2023",
+  "confidence": 1.0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9
+ }
+}

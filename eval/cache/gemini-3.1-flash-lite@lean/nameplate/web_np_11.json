@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "Mielewerke A.G.",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": "T. Wa. 700",
+  "confidence": 1.0
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "appliance": {
+  "value": "washing_machine",
+  "confidence": 1.0
+ }
+}

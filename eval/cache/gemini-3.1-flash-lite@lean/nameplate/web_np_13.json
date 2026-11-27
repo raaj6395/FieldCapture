@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "THE BOEING COMPANY",
+  "confidence": 1.0
+ },
+ "model": {
+  "value": "737-8200",
+  "confidence": 1.0
+ },
+ "serial": {
+  "value": "62357",
+  "confidence": 0.9
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1.0
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "LOCKHEED AIRCRAFT CORP.",
+  "confidence": 1
+ },
+ "model": {
+  "value": "163555-1-43",
+  "confidence": 0.95
+ },
+ "serial": {
+  "value": "246",
+  "confidence": 0.8
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 1
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9
+ }
+}

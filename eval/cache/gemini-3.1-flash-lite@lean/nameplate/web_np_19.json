@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "\u03a3\u03a4\u0391\u0393\u0399\u0395\u03a1-\u039d\u03a4\u0391\u0399\u039c\u039b\u0395\u03a1-\u03a0\u039f\u03a5\u03a7-\u0395\u039b\u039b\u0391\u03a3 \u0391.\u0392.\u0395.",
+  "confidence": 0.95
+ },
+ "model": {
+  "value": "768",
+  "confidence": 0.9
+ },
+ "serial": {
+  "value": "2757",
+  "confidence": 0.9
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.8
+ }
+}
