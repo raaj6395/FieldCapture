@@ -117,10 +117,6 @@ private fun stateDot(s: JobState) = when (s) {
   else -> Fc.muted
 }
 
-private val MOCK = listOf(
-    "Power off" to "powerOff", "Power on" to "powerOn", "Take off" to "doff", "Put on" to "don", "Fold" to "fold", "Unfold" to "unfold",
-    "Tap" to "tap", "Overheat" to "hot", "Cool down" to "cool", "Battery 10%" to "battery10", "Battery 80%" to "battery80", "Capture button" to "button",
-)
 private val SAY = listOf("capture nameplate", "capture damage kitchen north wall", "note subfloor soft by the cabinet", "pause", "resume")
 
 @Composable
@@ -163,6 +159,10 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
           StatusChip(if (listening) Lucide.mic else Lucide.micOff, if (listening) "Listening" else "Mic off", listening)
         }
       }
+    }
+    item {
+      GlassesView(js, state)
+      Spacer(Modifier.size(12.dp))
     }
     item {
       Card {
@@ -238,10 +238,8 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
       if (dev) {
         item {
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text("Mock glasses", style = Fc.meta)
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-              MOCK.forEach { (label, action) -> SmallAction(label) { js.mock(action) } }
-            }
+            Text("Glasses simulator", style = Fc.meta)
+            GlassesSimulator(js, state)
             Spacer(Modifier.size(8.dp))
             Text("Inject speech", style = Fc.meta)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {

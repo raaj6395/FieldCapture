@@ -78,6 +78,10 @@ class JobSession(private val app: Application) {
   val listening = MutableStateFlow(false)
   val queue = MutableStateFlow(0)
   val lines = MutableStateFlow<List<String>>(emptyList())
+  val preview = MutableStateFlow<Bitmap?>(null)
+  val glassesInfo = MutableStateFlow<GlassesInfo?>(null)
+  val caption = MutableStateFlow<Caption?>(null)
+  val shutter = MutableStateFlow(0)
 
   private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
   private val selector by lazy { AutoDeviceSelector() }
@@ -103,6 +107,9 @@ class JobSession(private val app: Application) {
   private var batteryWarned = false
   private var doffPaused = false
   private var lastShot: Shot? = null
+
+  data class GlassesInfo(val battery: Int, val worn: Boolean, val open: Boolean, val hot: Boolean)
+  data class Caption(val text: String, val tech: Boolean, val at: Long = SystemClock.elapsedRealtime())
 
   private data class Shot(val kind: String, val room: String? = null, val surface: String? = null, val unrecognised: String? = null)
 
@@ -138,6 +145,7 @@ class JobSession(private val app: Application) {
         log("active device: $id")
         if (id == null) {
           device = null
+          glassesInfo.value = null
           deviceReady.value = false
           if (job.state == JobState.ACTIVE || job.state == JobState.PAUSED) transition(Ev.LOST, "device gone")
           return@collectLatest
@@ -417,7 +425,12 @@ class JobSession(private val app: Application) {
           scope2.launch {
             st.videoStream.collect {
               lastFrameAt = SystemClock.elapsedRealtime()
-              if (frames++ % 300 == 0L) log("frame ${it.width}x${it.height}")
+              if (frames++ % 300 == 0L) log("frame ${it.width}x${it.height} compressed=${it.isCompressed} bytes=${it.buffer.remaining()}")
+              if (frames % 3 == 0L && preview.subscriptionCount.value > 0 && !it.isCompressed) {
+                val f = it
+                val bytes = ByteArray(f.buffer.remaining()).also { b -> f.buffer.duplicate().get(b) }
+                scope2.launch(Dispatchers.Default) { runCatching { Frames.i420(bytes, f.width, f.height) }.getOrNull()?.let { b -> preview.value = b } }
+              }
             }
           }
           st.start().onFailure { e, _ -> event("stream start FAILED: ${e.description}") }
@@ -453,6 +466,7 @@ class JobSession(private val app: Application) {
       log("device: link=${d.linkState} battery=${d.batteryLevel} thermal=${d.thermalLevel} don=${d.donState} hinge=${d.hingeState}")
     }
     deviceReady.value = d.hingeState != HingeState.CLOSED && d.donState != DonState.DOFFED
+    glassesInfo.value = GlassesInfo(d.batteryLevel, d.donState != DonState.DOFFED, d.hingeState != HingeState.CLOSED, d.thermalLevel >= ThermalLevel.SEVERE)
     if (!hot && d.thermalLevel >= ThermalLevel.SEVERE) setHot(true)
     if (hot && d.thermalLevel <= ThermalLevel.LIGHT) setHot(false)
     if (d.batteryLevel in 0 until 15) warnBattery() else if (d.batteryLevel >= 20) batteryWarned = false
@@ -500,6 +514,7 @@ class JobSession(private val app: Application) {
     if (tts.echo(r.text)) return log("ignored echo of our reply: \"${r.text}\"")
     val cmd = CommandParser.parse(r.text) ?: return log("chatter: \"${r.text}\"")
     log("voice: \"${r.text}\" conf=${r.confidence} -> $cmd")
+    caption.value = Caption(r.text, tech = true)
     handle(cmd, r.text, r.confidence)
   }
 
@@ -584,6 +599,7 @@ class JobSession(private val app: Application) {
   private fun better(a: Attempt, b: Attempt) = a.reasons.size < b.reasons.size || a.reasons.size == b.reasons.size && a.scores.blur > b.scores.blur
 
   private suspend fun shoot(st: Stream, kind: String): Attempt? {
+    shutter.update { it + 1 }
     val p = st.capturePhoto().fold(onSuccess = { it }, onFailure = { e, _ -> event("capture FAILED: ${e.description}"); null }) ?: return null
     return withContext(Dispatchers.Default) {
       val (bytes, ext) = when (p) {
@@ -659,6 +675,7 @@ class JobSession(private val app: Application) {
 
   fun say(text: String) {
     log("say: $text")
+    caption.value = Caption(text, tech = false)
     tts.say(text)
   }
 
