@@ -19,6 +19,10 @@ data class Capture(
     val transcript: String? = null,
     val asrConfidence: Float? = null,
     val retakeOf: String? = null,
+    val quality: QualityScores? = null,
+    val qualityReasons: List<String> = emptyList(),
+    val attempts: Int = 1,
+    val qualityFlag: String = "unchecked",
 )
 
 data class Note(val id: String, val at: Long, val text: String, val transcript: String, val asrConfidence: Float?)

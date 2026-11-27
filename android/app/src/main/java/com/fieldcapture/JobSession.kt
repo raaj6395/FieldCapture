@@ -6,6 +6,9 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Matrix
+import android.media.ExifInterface
 import android.os.SystemClock
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
@@ -44,6 +47,8 @@ import com.meta.wearable.dat.speech.Speech
 import com.meta.wearable.dat.speech.addSpeech
 import com.meta.wearable.dat.speech.types.SpeechState
 import com.meta.wearable.dat.speech.types.TranscriptionResult
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
@@ -59,6 +64,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import org.json.JSONArray
 import org.json.JSONObject
@@ -496,47 +502,95 @@ class JobSession(private val app: Application) {
     capture(shot, "capture button", null)
   }
 
+  private class Attempt(val bytes: ByteArray, val ext: String, val scores: QualityScores, val reasons: List<String>)
+
   private fun capture(shot: Shot, transcript: String?, conf: Float?, retakeOf: String? = null) {
     scope.launch {
       captureLock.withLock {
         if (job.state != JobState.ACTIVE) return@launch say(if (job.state == JobState.PAUSED) "Still paused." else if (job.open) "Glasses not connected." else "No job.")
-        val st = stream ?: return@launch say("No camera.")
         val t = SystemClock.elapsedRealtime()
-        st.capturePhoto().fold(
-            onSuccess = { p ->
-              val id = "c%02d".format(job.captures.size + 1)
-              val file = savePhoto(id, p)
-              job.captures += Capture(id, shot.kind, System.currentTimeMillis(), file.name, shot.room, shot.surface, shot.unrecognised, transcript, conf, retakeOf)
-              lastShot = shot
-              persist()
-              log("captured $id ${shot.kind} ${file.length() / 1024}KB in ${SystemClock.elapsedRealtime() - t}ms")
-              say(reply(shot))
-            },
-            onFailure = { e, _ ->
-              event("capture FAILED: ${e.description}")
-              say("Photo failed. Say retake.")
-            },
-        )
+        var best: Attempt? = null
+        var attempts = 0
+        for (round in 0..MAX_RETAKES) {
+          val st = stream ?: break
+          for (burst in 0..SILENT_EXTRA_SHOTS) {
+            val a = shoot(st, shot.kind) ?: break
+            attempts++
+            log("attempt $attempts ${a.reasons.ifEmpty { listOf("ok") }} blur=%.1f bright=%.1f dark=%.3f glare=%.3f edges=%.4f border=%.3f".format(
+                a.scores.blur, a.scores.brightness, a.scores.darkFrac, a.scores.glareFrac, a.scores.edgeDensity, a.scores.borderEdgeFrac))
+            if (best == null || better(a, best)) best = a
+            if (a.reasons != listOf("blurry")) break
+          }
+          val b = best ?: break
+          if (b.reasons.isEmpty() || round == MAX_RETAKES) break
+          say(Quality.prompt(b.reasons.first()))
+          delay(RETAKE_WAIT_MS)
+          if (job.state != JobState.ACTIVE) break
+        }
+        val b = best ?: return@launch say("Photo failed. Say retake.")
+        val id = "c%02d".format(job.captures.size + 1)
+        val file = File(jobDir(), "$id.${b.ext}").apply { writeBytes(b.bytes) }
+        val flag = if (b.reasons.isEmpty()) "ok" else "low"
+        job.captures += Capture(id, shot.kind, System.currentTimeMillis(), file.name, shot.room, shot.surface, shot.unrecognised, transcript, conf, retakeOf,
+            b.scores, b.reasons, attempts, flag)
+        lastShot = shot
+        persist()
+        log("captured $id ${shot.kind} quality=$flag ${b.reasons} after $attempts shots, ${file.length() / 1024}KB in ${SystemClock.elapsedRealtime() - t}ms")
+        say(reply(shot) + if (flag == "low") " Saved, low quality." else "")
       }
     }
+  }
+
+  private fun better(a: Attempt, b: Attempt) = a.reasons.size < b.reasons.size || a.reasons.size == b.reasons.size && a.scores.blur > b.scores.blur
+
+  private suspend fun shoot(st: Stream, kind: String): Attempt? {
+    val p = st.capturePhoto().fold(onSuccess = { it }, onFailure = { e, _ -> event("capture FAILED: ${e.description}"); null }) ?: return null
+    return withContext(Dispatchers.Default) {
+      val (bytes, ext) = when (p) {
+        is PhotoData.Bitmap -> ByteArrayOutputStream().also { p.bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) }.toByteArray() to "jpg"
+        is PhotoData.HEIC -> {
+          val buf = p.data.duplicate().apply { rewind() }
+          val b = ByteArray(buf.remaining()).also { buf.get(it) }
+          b to if (b.size > 2 && b[0] == 0xFF.toByte() && b[1] == 0xD8.toByte()) "jpg" else "heic"
+        }
+      }
+      val bmp = upright(bytes)
+      val px = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
+      val scores = Quality.score(px, bmp.width, bmp.height, thresholds)
+      Attempt(bytes, ext, scores, Quality.verdict(scores, kind, thresholds))
+    }
+  }
+
+  private fun upright(bytes: ByteArray): Bitmap {
+    // ponytail: decodes full resolution; use inSampleSize (in Python too) if real-glasses stills are 12 MP
+    val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+    val deg = when (ExifInterface(ByteArrayInputStream(bytes)).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
+      ExifInterface.ORIENTATION_ROTATE_90 -> 90
+      ExifInterface.ORIENTATION_ROTATE_180 -> 180
+      ExifInterface.ORIENTATION_ROTATE_270 -> 270
+      else -> 0
+    }
+    return if (deg == 0) bmp else Bitmap.createBitmap(bmp, 0, 0, bmp.width, bmp.height, Matrix().apply { postRotate(deg.toFloat()) }, true)
+  }
+
+  private val thresholds by lazy {
+    val o = JSONObject(app.assets.open("thresholds.json").bufferedReader().readText())
+    fun JSONObject.dbl(k: String) = if (has(k) && !isNull(k)) getDouble(k) else null
+    Thresholds(
+        edgeE = o.getDouble("edge_e"),
+        darkMean = o.getDouble("dark_mean"),
+        darkFrac = o.getDouble("dark_frac"),
+        kinds = listOf("nameplate", "damage").associateWith { k ->
+          val j = o.getJSONObject(k)
+          KindThresholds(j.getDouble("blur"), j.dbl("glare_frac"), j.dbl("empty_edge_density"), j.dbl("border_edge_frac"))
+        },
+        provisional = o.optBoolean("provisional"),
+    ).also { log("quality thresholds loaded${if (it.provisional) " (PROVISIONAL)" else ""}") }
   }
 
   private fun reply(shot: Shot) =
       if (shot.kind == "nameplate") "Nameplate."
       else listOfNotNull("Damage", shot.room ?: shot.unrecognised, shot.surface).joinToString(", ") + "."
-
-  private fun savePhoto(id: String, p: PhotoData): File {
-    val dir = jobDir()
-    return when (p) {
-      is PhotoData.Bitmap -> File(dir, "$id.jpg").also { f -> f.outputStream().use { p.bitmap.compress(Bitmap.CompressFormat.JPEG, 95, it) } }
-      is PhotoData.HEIC -> {
-        val buf = p.data.duplicate().apply { rewind() }
-        val bytes = ByteArray(buf.remaining()).also { buf.get(it) }
-        val jpeg = bytes.size > 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()
-        File(dir, if (jpeg) "$id.jpg" else "$id.heic").also { it.writeBytes(bytes) }
-      }
-    }
-  }
 
   private fun event(msg: String) {
     log(msg)
@@ -598,6 +652,9 @@ class JobSession(private val app: Application) {
       JSONObject().put("id", c.id).put("kind", c.kind).put("at", c.at).put("file", c.file).put("room", c.room)
           .put("surface", c.surface).put("unrecognised", c.unrecognised).put("transcript", c.transcript)
           .put("asr_confidence", c.asrConfidence?.toDouble()).put("retake_of", c.retakeOf)
+          .put("quality_flag", c.qualityFlag).put("quality_reasons", JSONArray(c.qualityReasons)).put("attempts", c.attempts)
+          .put("quality", c.quality?.let { q -> JSONObject().put("blur", q.blur).put("brightness", q.brightness).put("dark_frac", q.darkFrac)
+              .put("glare_frac", q.glareFrac).put("edge_density", q.edgeDensity).put("border_edge_frac", q.borderEdgeFrac) })
     }))
     put("notes", JSONArray(job.notes.map { n ->
       JSONObject().put("id", n.id).put("at", n.at).put("text", n.text).put("transcript", n.transcript)
@@ -619,7 +676,11 @@ class JobSession(private val app: Application) {
     job.events += o.getJSONArray("events").objs().map { JobEvent(it.getString("type"), it.getLong("at"), it.getString("cause")) }
     job.captures += o.getJSONArray("captures").objs().map {
       Capture(it.getString("id"), it.getString("kind"), it.getLong("at"), it.getString("file"), it.str("room"), it.str("surface"),
-          it.str("unrecognised"), it.str("transcript"), it.flt("asr_confidence"), it.str("retake_of"))
+          it.str("unrecognised"), it.str("transcript"), it.flt("asr_confidence"), it.str("retake_of"),
+          it.optJSONObject("quality")?.let { q -> QualityScores(q.getDouble("blur"), q.getDouble("brightness"), q.getDouble("dark_frac"),
+              q.getDouble("glare_frac"), q.getDouble("edge_density"), q.getDouble("border_edge_frac")) },
+          it.optJSONArray("quality_reasons")?.let { r -> (0 until r.length()).map(r::getString) } ?: emptyList(),
+          it.optInt("attempts", 1), it.optString("quality_flag", "unchecked"))
     }
     job.notes += o.getJSONArray("notes").objs().map { Note(it.getString("id"), it.getLong("at"), it.getString("text"), it.getString("transcript"), it.flt("asr_confidence")) }
     job.restore()
@@ -668,5 +729,8 @@ class JobSession(private val app: Application) {
     const val MUTE_AFTER_TTS_MS = 500L
     const val ECHO_WINDOW_MS = 6000L
     val BACKOFF_S = listOf(1, 2, 4, 8, 15, 30)
+    const val MAX_RETAKES = 2
+    const val SILENT_EXTRA_SHOTS = 2
+    const val RETAKE_WAIT_MS = 4000L
   }
 }
