@@ -96,7 +96,7 @@ class JobSession(private val app: Application) {
   private var attempt = 0
   private var lastFrameAt = 0L
   private var frames = 0L
-  private val deviceReady = MutableStateFlow(false)
+  val deviceReady = MutableStateFlow(false)
   private var device: Device? = null
   private var hot = false
   private var batteryWarned = false
