@@ -8,6 +8,7 @@ import jsonschema
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
+import nameplate
 from mapping import line_items
 
 HERE = Path(__file__).parent
@@ -75,6 +76,10 @@ async def post_capture(meta: str = Form(...), photo: UploadFile = File(...)):
         },
         "fields": voice_fields(m),
     }
+    if m.get("ocr"):
+        write_json(d / f"{cid}.ocr.json", m["ocr"])
+        if m["type"] == "nameplate":
+            rec["fields"].update(nameplate.extract(m["ocr"], rec["quality"]))
     write_json(d / f"{cid}.json", rec)
     return JSONResponse({"status": "stored", "capture_id": cid}, 201)
 

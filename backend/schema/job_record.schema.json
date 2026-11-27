@@ -54,7 +54,8 @@
         "value": {},
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
         "source": {"type": "string"},
-        "raw_text": {"type": ["string", "null"]}
+        "raw_text": {"type": ["string", "null"]},
+        "signals": {"type": "object", "additionalProperties": {"type": "number"}}
       }
     },
     "capture": {
