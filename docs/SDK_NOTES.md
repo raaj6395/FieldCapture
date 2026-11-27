@@ -140,3 +140,20 @@ Gotchas:
 - Excluded from the web set on purpose: faces, mugshots, police sketches, Nazi insignia, a memorial plate with a person's name and death date, and FBI evidence photos (Epstein Files Transparency Act release).
 
 Still needed: real frames from glasses (or the mock camera) for blur and glare, since phone and web photos are sharper than a 7-15 fps head-mounted stream; then rerun the tuner on those and drop `provisional`.
+
+## 2026-11-27 - Phase 6 offline drill (phone RZCWA0ERVFA, mock glasses, backend on laptop via `adb reverse tcp:8000 tcp:8000`)
+
+| step | result |
+|---|---|
+| airplane mode on | Samsung kept Wi-Fi connected in airplane mode; also needed `svc wifi disable` + `svc data disable`. Verified "Active default network: none", ping unreachable |
+| start job 83790B46, 3 captures + 2 notes by injected speech | all saved to disk with spoken confirmation; no upload attempted (WorkManager waits on CONNECTED) |
+| force-stop with 6 items unsent | process gone, no uploaded.txt |
+| reopen | "restored job 83790B46 (3 captures, 2 notes) -> RECONNECTING", streaming again in 1.7 s; injected speech worked (fresh process) |
+| 1 more capture, end job | c04 saved, "Job ended. 4 photos, 2 notes." |
+| network back on | all 6 items 201 + finalize 200 **6 s** after re-enabling |
+| backend check | job_record.json status complete, missing [], 0 schema errors, 0 duplicate ids; events start, connected, disconnect, reconnect, stop; max upload delay 127 s (offline time) |
+| replay: delete phone markers, relaunch | every item re-sent -> 200 "exists", store still 4 captures + 2 notes, record unchanged -> crash between POST and marker is safe |
+
+Side result: on first launch (before network was off) the worker flushed 3 older stopped jobs that were still queued from earlier sessions (A963C600, 5F08C2E2, 005D1978), all finalized.
+
+Damage captures map to INSP-REV (needs_review) because there is no extraction yet; Phase 5 fills damage_type/size.
