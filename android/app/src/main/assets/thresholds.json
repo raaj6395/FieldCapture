@@ -1,0 +1,8 @@
+{
+  "provisional": true,
+  "edge_e": 20,
+  "dark_mean": 45,
+  "dark_frac": 0.5,
+  "nameplate": { "blur": 60, "glare_frac": 0.08, "empty_edge_density": 0.01, "border_edge_frac": 0.45 },
+  "damage": { "blur": 15 }
+}
