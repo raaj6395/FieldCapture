@@ -1,0 +1,141 @@
+# FieldCapture
+
+A hands-free field capture app for Meta AI glasses (Android, Meta Wearables Device Access Toolkit 1.1.0, run on the Mock Device Kit). A water-damage technician walks a house and only speaks: "capture nameplate", "capture damage kitchen north wall", "note subfloor soft by the cabinet". The phone checks every photo on the device and asks for a retake when it is bad, saves everything locally first, uploads when there is signal, and the backend turns the walk into one JSON job record with per-field confidence and draft estimate line items.
+
+Demo video: _to be recorded from the tagged build (see Known limitations)._
+
+## Setup (target: under 10 minutes on a clean Mac)
+
+Prerequisites: JDK 17, Android SDK (platform 36, build-tools 36.0.0, platform-tools), Python 3.11+, an Android phone (Android 12+) with USB debugging. No Android Studio needed; the Gradle wrapper downloads Gradle. DAT 1.1.0 comes from Maven Central (no GitHub token), and the Developer Mode placeholders in the manifest are `0`, so no Meta developer app is needed for the mock.
+
+```sh
+git clone <repo> && cd <repo>
+
+# 1. backend
+python3 -m venv .venv && .venv/bin/pip install -r backend/requirements.txt
+cp backend/.env.example backend/.env          # put your Gemini key (AI Studio, free tier) in GEMINI_API_KEY
+cd backend && FC_VLM=1 ../.venv/bin/python -m uvicorn app:app --host 127.0.0.1 --port 8000 &
+cd ..
+
+# 2. phone
+export JAVA_HOME=<jdk17>  ANDROID_HOME=<android sdk>      # or edit and `source env.sh`
+adb reverse tcp:8000 tcp:8000                  # phone reaches the backend as 127.0.0.1:8000 over USB
+cd android && ./gradlew installDebug && adb shell am start -n com.fieldcapture/.MainActivity
+```
+
+Grant the permissions, press **Start job**, then speak. Without `FC_VLM=1` the backend makes no model calls (ML Kit OCR fields only).
+
+Mock device: the debug build pairs a mock Ray-Ban Meta on launch, powered on, unfolded and donned. Its camera is the phone's back camera; its speech source is live phone-mic ASR (`MockSpeechSource.LIVE_DEVICE_ASR`). The **Mock glasses** buttons simulate power off/on, doff/don, fold/unfold, heat, low battery and the capture button; **Inject speech** buttons send typed commands. The same actions are scriptable over adb: `tools/fc.sh start "say:capture nameplate" powerOff powerOn stop`.
+
+Tests: `cd backend && ../.venv/bin/python -m pytest` (26 tests, no API calls) and `cd android && ./gradlew testDebugUnitTest` (parser, job state machine, Kotlin/Python quality parity). `connectedDebugAndroidTest` runs a voice end-to-end test on the phone.
+
+## Architecture
+
+```mermaid
+flowchart TB
+  subgraph Glasses["Mock glasses (DAT Mock Device Kit)"]
+    cam[camera stream + capturePhoto] ; mic[speech: phone-mic ASR] ; btn[capture button]
+  end
+  subgraph Phone["Android app"]
+    js[JobSession: job state machine, reconnect with backoff, watchdog, foreground service]
+    cp[CommandParser] --> js
+    q[Quality check: blur / dark / glare / empty, silent burst + 2 spoken retakes]
+    ocr[ML Kit OCR on nameplates]
+    disk[(session.json + photos: saved before the spoken reply)]
+    w[UploadWorker: WorkManager, network constraint, idempotent ids]
+    js --> q --> ocr --> disk --> w
+  end
+  subgraph Backend["Backend (FastAPI, Python)"]
+    api["/captures, /notes (idempotent)"] --> ex[extract.py: ML Kit rules + Gemini 3.1 Flash-Lite, two-reader confidence]
+    fin["/jobs/{id}/finalize"] --> map[mapping.py: 13 line-item codes] --> rec[(job_record.json, schema-validated)]
+  end
+  mic --> cp ; btn --> js ; cam --> q ; w -- "HTTPS / adb reverse when online" --> api
+```
+
+## Voice commands
+
+| say | result |
+|---|---|
+| start job / pause / resume / end job | session lifecycle; the job record outlives SDK sessions |
+| capture nameplate | photo -> quality check -> OCR -> "Nameplate." |
+| capture damage [room] [surface] | e.g. "capture damage kitchen north wall"; room carries over from the last capture if omitted |
+| note [free text] | "Noted: ..." read back, flagged for review |
+| retake | re-shoots the last capture |
+
+The DAT speech service works in Developer Mode, so commands use the glasses' speech path (on the mock that is the phone microphone through `LIVE_DEVICE_ASR`; the brief's phone-mic fallback is therefore what the mock runs today). Measured live on one speaker: **15/20** commands right in a quiet room before parser fixes, **7/10** with a fan/TV on after fixes; free-text notes garble in noise ("drywall soft behind the toilet" -> "drywall behind soft wallet"), so notes are read back and always marked for review. TTS echo is filtered (our own reply was being heard as a command). Details: `docs/SDK_NOTES.md`.
+
+## Capture quality check (on the phone)
+
+Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quality.py`, checked equal to 4 decimals by a unit test): Laplacian variance (blur), mean luma (dark), saturated pixels in the centre (glare), edge density (nothing in view), edge share in the border band (cut off). A blurry-only failure triggers up to 2 silent extra shots; otherwise the tech hears one prompt ("Too dark. Turn on your light.", "Blurry. Hold still.", "Glare. Tilt a little.", "Nothing in view.") and gets 2 retakes before the photo is kept and marked `low` - the app never blocks the walk.
+
+| check | threshold | how it was picked |
+|---|---|---|
+| dark (mean luma) | < 45 | catches 100% of darkened copies, 0% false rejects (tune split) |
+| nameplate blur | < 70.7 | geometric middle of the class gap; checked on the tech's own phone photos: the sharp Razer label (120) passes, real blurry shots (46, 54) fail |
+| damage blur | < 5.6 | damage texture is soft by nature; 0 false rejects |
+| nameplate glare | > 32% of centre saturated | 100% of glare copies caught, 0% false rejects |
+| nothing in view | edge density < 0.01 | default, not tuned |
+| cut off | **off** | best fit caught 58% of cut-off copies but rejected 3/13 good plates and the tech's sharp label: text touching the frame edge is also what a well-filled close-up looks like (see Known limitations) |
+
+`tools/tune_thresholds.py` reproduces the table. Thresholds are still marked provisional: they were tuned on web photos + synthetic variants + 8 of our own phone photos, not on frames from real glasses.
+
+## Extraction and confidence
+
+- **Nameplate:** two independent readers. ML Kit text recognition runs on the phone (median 71 ms, free, offline) and a rule parser pulls make/model/serial/date; Gemini 3.1 Flash-Lite reads the same photo on the backend. Field confidence = reader confidence x photo quality x format check, then **agreement**: both readers agree -> 1-(1-a)(1-b); only one has a value -> x0.7; they disagree -> x0.4. Gemini's own confidence alone stays ~0.8 even when wrong; agreement is what brings wrong answers down.
+- **Damage:** room and surface come from the spoken command (0.9); Gemini gives damage type (8 classes) and a rough size, with size confidence capped at 0.5 without a reference object and 0.8 with one.
+- **Note:** Gemini turns the text into location / issue / material / severity, discounted for ASR errors.
+- Model choice: bake-off on 5 plates - 3.1 Flash-Lite 11 correct / 2 wrong, 2.5 Flash 10/3, 3.5 Flash too slow (11-36 s, timeouts). Cost per job ~ **$0.006** at paid-tier prices (2 nameplates, 5 damage, 3 notes); we ran on the free tier ($0 billed; free-tier requests may be used by Google to improve its models). Every call is logged with tokens and latency; a local guard caps calls per day under the free-tier quota.
+
+## Job record, line items, offline
+
+- Schema: `backend/schema/job_record.schema.json` (JSON Schema 2020-12, validated on every finalize). Catalog: `backend/line_items.json` (13 codes, e.g. DRY-RR drywall remove and replace per sq ft, PNT-CLG, SUBF-RR, DRY-EQ drying equipment per day, WH-RPL water heater replace). Rules in `backend/mapping.py`; every line item carries its quantity basis (measured / estimated / default), source capture ids and a status (draft / needs_review / suggested). Low confidence or low photo quality -> needs_review.
+- Offline: every capture is written to disk (photo + `session.json`) before the spoken reply. A WorkManager job with a network constraint uploads when signal returns; captures carry stable ids and the backend stores each id once, so a crash between upload and "uploaded" mark cannot duplicate. A job finalized before all captures arrive is `partial` with the missing ids listed, and becomes `complete` when they land. Drill on the phone: airplane mode, 3 captures + 2 notes, force-stop, reopen, 1 more capture, end job, network on -> all 6 items uploaded **6 s** later, 0 lost, 0 duplicates; replaying every upload changed nothing.
+- Sample records: `jobs/83790B46.json` (the offline drill). Three final samples go in `samples/` (see Known limitations).
+
+## Results (development set)
+
+Full report: `eval/REPORT.md`. **These numbers come from openly licensed web photos plus synthetic dark copies, used as a development set.** The brief requires the test set to be our own captures; the same scripts (`tools/eval.py`, `tools/report.py`) re-run on our own labelled frames, and those numbers will replace these.
+
+- Nameplate fields with two readers: make 85%, model 77%, serial 77%, date 100% (n=13 plates each); ML Kit alone 31-92%. Wrong answers carry lower confidence on every nameplate field (serial 0.28 wrong vs 0.69 right).
+- Damage type 56% (5/9) and its confidence does **not** drop when wrong (0.90 vs 0.95) - single reader; most failures are photos with two kinds of damage.
+- Low light: nameplate fields 85% -> 71%, damage 56% -> 38%; confidence roughly halves on dark frames. Frames the quality check rejects are less accurate (nameplate 73% vs 83%).
+
+## Assumptions
+
+- One technician per job; `tech_id` is fixed (`tech-1`). Units are imperial for line items (sq ft, lf), metric for measured sizes (cm).
+- Room/surface spoken by the tech are trusted over anything the image suggests.
+- A water heater older than 10 years is suggested for replacement (status `suggested`, never `draft`).
+- Day/month order on old plates is ambiguous; dates are scored and used by year.
+- The phone reaches the backend over `adb reverse` for the demo (cleartext HTTP to 127.0.0.1); production would use HTTPS.
+
+## Known limitations
+
+- **Test set is not our own captures yet.** The rules require it; the eval pipeline is ready, the frames are not shot. Reported numbers are a development set.
+- **Cut-off framing check is switched off** (requirement 3 lists it). The "nothing in view" check runs; edge-based cut-off detection could not separate a cut-off plate from a well-filled close-up on our data. Next: detect the plate rectangle and check its corners are inside the frame.
+- **Damage-type confidence is not calibrated** (see Results). Damage line items should be reviewed until a second signal exists.
+- Not run on real glasses. On the mock: injected speech stops working after a reconnect in 11/13 tries (live mic is unaffected); the mock gives 640x480 stills; ASR final confidence is always 0.0, so we do not gate on it.
+- Size from a single photo is a model estimate (stretch A not done). Notes in noise garble.
+- Demo video, three final sample walk-throughs, fresh-clone setup timing and the stage-latency table for a real walk (`tools/cost_latency.py`) still need a recording session with the final build.
+- Backend has no auth and runs extraction inside the upload request.
+
+## What we cut and why
+
+- Room database: the files-first queue (`session.json` + `uploaded.txt` markers) already gives atomic, lossless state with less code.
+- Cloud Vision as the second OCR reader: no key; Gemini took that role.
+- Stretch A (size) and B/C: stretch D done properly instead.
+- iOS: one platform end to end beats two half-done.
+
+## Two more weeks
+
+1. Shoot and label the 40+ own-frame test set from real jobs, then retune thresholds on glasses frames and drop `provisional`.
+2. Damage: multi-label output with top-2 probabilities (margin as confidence), and a reference-object size estimate.
+3. Cut-off check from the detected plate rectangle; crop the plate before the model call (fewer tokens, better OCR).
+4. Move extraction off the upload request; incremental finalize.
+5. Week-one field test with five techs (usable-frame rate, retakes per job, voice error rate, disconnects per hour, battery per hour, back-office edits per record).
+
+## AI tools used
+
+- **Claude Code** (Claude Opus, in VS Code) wrote most of the code, tests, scripts and docs under direction, ran the builds, adb drills and evaluations, and labelled the web development set by reading the images. Every number in this README was produced by a script in this repo and checked by a human on the phone.
+- **Gemini 3.1 Flash-Lite** (Google AI Studio, free tier) at runtime for nameplate reading, damage classification and note structuring. **ML Kit Text Recognition 16.0.1** on device.
+
+Spend: $0 (all API use on free tiers, no parts bought).
