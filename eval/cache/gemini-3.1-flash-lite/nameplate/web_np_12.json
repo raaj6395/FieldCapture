@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Veritas",
+  "confidence": 1.0,
+  "raw_text": "VERITAS"
+ },
+ "model": {
+  "value": "RS",
+  "confidence": 1.0,
+  "raw_text": "RS"
+ },
+ "serial": {
+  "value": "61651",
+  "confidence": 1.0,
+  "raw_text": "61651"
+ },
+ "mfg_date": {
+  "value": "1948",
+  "confidence": 1.0,
+  "raw_text": "1948"
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1.0,
+  "raw_text": null
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Rheem",
+  "confidence": 0.9,
+  "raw_text": "Rheem Sales Company, Inc."
+ },
+ "model": {
+  "value": "PROE50 T2 RH9",
+  "confidence": 0.9,
+  "raw_text": "PROE50 T2 RH9"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "water_heater",
+  "confidence": 1,
+  "raw_text": "Water Heater"
+ }
+}

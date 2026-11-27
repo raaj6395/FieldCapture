@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Miele",
+  "confidence": 1.0,
+  "raw_text": "Miele"
+ },
+ "model": {
+  "value": "Wa 75 T1/El 2",
+  "confidence": 1.0,
+  "raw_text": "Wa 75 T1/El 2"
+ },
+ "serial": {
+  "value": "02585805",
+  "confidence": 0.95,
+  "raw_text": "02585805"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 1.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.8,
+  "raw_text": null
+ }
+}

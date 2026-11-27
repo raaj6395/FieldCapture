@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "ROLLS ROYCE",
+  "confidence": 1.0,
+  "raw_text": "ROLLS ROYCE"
+ },
+ "model": {
+  "value": "H. XIV",
+  "confidence": 0.9,
+  "raw_text": "H. XIV"
+ },
+ "serial": {
+  "value": "29",
+  "confidence": 0.9,
+  "raw_text": "29"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1.0,
+  "raw_text": null
+ }
+}
