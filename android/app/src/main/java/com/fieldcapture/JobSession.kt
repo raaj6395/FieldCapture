@@ -10,6 +10,7 @@ import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.media.ExifInterface
 import android.os.SystemClock
+import android.media.AudioManager
 import android.speech.tts.TextToSpeech
 import android.speech.tts.UtteranceProgressListener
 import android.util.Log
@@ -152,6 +153,7 @@ class JobSession(private val app: Application) {
         }
       }
     }
+    if (prefs.getBoolean("muted_beeps", false)) quietBeeps(false)
     restore()
     refreshQueue()
     UploadWorker.kick(app)
@@ -239,7 +241,10 @@ class JobSession(private val app: Application) {
     state.value = to
     persist()
     when (to) {
-      JobState.CONNECTING -> JobService.start(app)
+      JobState.CONNECTING -> {
+        JobService.start(app)
+        quietBeeps(true)
+      }
       JobState.ACTIVE -> {
         lastFrameAt = SystemClock.elapsedRealtime()
         attempt = 0
@@ -265,6 +270,10 @@ class JobSession(private val app: Application) {
         connectJob?.cancel()
         release()
         app.stopService(Intent(app, JobService::class.java))
+        scope.launch {
+          delay(2000)
+          if (!job.open) quietBeeps(false)
+        }
         queueUpload()
       }
       JobState.IDLE -> Unit
@@ -712,6 +721,16 @@ class JobSession(private val app: Application) {
     }))
   }
 
+  private val prefs by lazy { app.getSharedPreferences("fc", Context.MODE_PRIVATE) }
+
+  private fun quietBeeps(on: Boolean) {
+    runCatching {
+      app.getSystemService(AudioManager::class.java).adjustStreamVolume(AudioManager.STREAM_NOTIFICATION, if (on) AudioManager.ADJUST_MUTE else AudioManager.ADJUST_UNMUTE, 0)
+      prefs.edit().putBoolean("muted_beeps", on).apply()
+      log(if (on) "notification sounds muted (recognizer beeps)" else "notification sounds restored")
+    }.onFailure { log("notification mute FAILED: $it") }
+  }
+
   private fun restore() {
     val f = jobsRoot().listFiles()?.map { File(it, "session.json") }?.filter { it.exists() }
         ?.firstOrNull { JSONObject(it.readText()).getString("state") !in setOf("IDLE", "STOPPED") } ?: return
@@ -738,6 +757,7 @@ class JobSession(private val app: Application) {
     persist()
     log("restored job ${job.id} (${job.captures.size} captures, ${job.notes.size} notes) -> RECONNECTING")
     JobService.start(app)
+    quietBeeps(true)
     say("Job restored.")
     connect()
   }
