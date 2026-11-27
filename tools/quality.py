@@ -51,7 +51,13 @@ def score(path, t=None):
     return scores(shrink(gray(path)), t["edge_e"])
 
 
-def verdict(s, kind, t=None):
+def text_at_edge(ocr, margin):
+    w, h = ocr["w"], ocr["h"]
+    return sum(1 for l in ocr["lines"] if len(l["text"].strip()) >= 3 and l["box"]
+               and (l["box"][0] <= margin * w or l["box"][1] <= margin * h or l["box"][2] >= w - margin * w or l["box"][3] >= h - margin * h))
+
+
+def verdict(s, kind, t=None, ocr=None):
     t = t or json.loads(THRESHOLDS.read_text())
     k = t[kind]
     reasons = []
@@ -64,6 +70,8 @@ def verdict(s, kind, t=None):
     if k.get("empty_edge_density") is not None and s["edge_density"] < k["empty_edge_density"]:
         reasons.append("empty")
     if k.get("border_edge_frac") is not None and s["border_edge_frac"] > k["border_edge_frac"]:
+        reasons.append("cut_off")
+    if k.get("text_edge_margin") is not None and ocr and text_at_edge(ocr, k["text_edge_margin"]):
         reasons.append("cut_off")
     return reasons
 

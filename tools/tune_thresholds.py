@@ -21,6 +21,8 @@ def load():
         items.append({"file": r["file"], "path": WEB / "synth" / r["file"], "split": r["split"], "type": r["type"], "expect": r["expect"], "condition": "synthetic"})
     for it in items:
         it["s"] = quality.score(it["path"], t)
+        ocr = (quality.ROOT / "data/own_ocr" if it["split"] == "real" else WEB / "ocr_mlkit") / (Path(it["file"]).stem + ".json")
+        it["ocr"] = json.loads(ocr.read_text())["640"] if ocr.exists() else None
     return t, items
 
 
@@ -64,6 +66,14 @@ def tune(t, items):
     fit(["nameplate", "border_edge_frac"], "border_edge_frac", "nameplate", "cut_off", False, cap=0.0)
     t["nameplate"]["border_edge_frac"] = None
     log.append("nameplate.border_edge_frac     = disabled: edge-touching text also means a well-filled frame; good plates got cut_off retakes")
+    good = [i for i in ok if i["type"] == "nameplate" and i["ocr"]]
+    cut = [i for i in tr if i["type"] == "nameplate" and i["expect"] == "cut_off" and i["ocr"]]
+    rate = lambda g, m: sum(bool(quality.text_at_edge(i["ocr"], m)) for i in g) / len(g)
+    cands = [(rate(cut, m), -rate(good, m), m) for m in (0.005 * k for k in range(1, 11)) if rate(good, m) <= MAX_FALSE_REJECT]
+    tp, nfr, _ = max(cands)
+    tied = [m for a, b, m in cands if (a, b) == (tp, nfr)]
+    t["nameplate"]["text_edge_margin"] = round(tied[len(tied) // 2], 3)
+    log.append(f"nameplate.text_edge_margin     = {t['nameplate']['text_edge_margin']:10.4f}   catches {tp:5.0%} of cut_off (n={len(cut)}), rejects {-nfr:4.0%} of good (n={len(good)}); OCR line touching the edge, ties {min(tied):.3f}-{max(tied):.3f}")
     return log
 
 
@@ -75,7 +85,7 @@ def report(t, items, split):
             g = [i for i in rows if i["type"] == typ and i["expect"] == exp]
             if not g:
                 continue
-            v = [quality.verdict(i["s"], typ, t) for i in g]
+            v = [quality.verdict(i["s"], typ, t, i["ocr"]) for i in g]
             if exp == "ok":
                 bad = [f"{i['file']}({','.join(x)})" for i, x in zip(g, v) if x]
                 out.append(f"  {typ:9} good      passed {len(g) - len(bad):2}/{len(g):2}  rejected: {' '.join(bad) or '-'}")

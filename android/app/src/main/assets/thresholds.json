@@ -7,7 +7,8 @@
     "blur": 70.6603,
     "glare_frac": 0.3238,
     "empty_edge_density": 0.01,
-    "border_edge_frac": null
+    "border_edge_frac": null,
+    "text_edge_margin": 0.03
   },
   "damage": {
     "blur": 5.6166
