@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "FORON",
+  "confidence": 1.0,
+  "raw_text": "FORON"
+ },
+ "model": {
+  "value": "WN 0800 G",
+  "confidence": 1.0,
+  "raw_text": "WN 0800 G"
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "washing_machine",
+  "confidence": 1.0,
+  "raw_text": null
+ }
+}

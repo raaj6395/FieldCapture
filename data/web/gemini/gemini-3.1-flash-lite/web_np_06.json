@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Copeland Scroll",
+  "confidence": 1.0,
+  "raw_text": "Copeland Scroll"
+ },
+ "model": {
+  "value": "ZP16K5E-PFV-130",
+  "confidence": 0.95,
+  "raw_text": "P16K5E-PFV-130"
+ },
+ "serial": {
+  "value": "08K168047",
+  "confidence": 1.0,
+  "raw_text": "08K168047"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 1.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "hvac_compressor",
+  "confidence": 1.0,
+  "raw_text": null
+ }
+}

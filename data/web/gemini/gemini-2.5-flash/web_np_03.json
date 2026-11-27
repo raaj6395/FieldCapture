@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "SONY",
+  "confidence": 0.95,
+  "raw_text": "SONY"
+ },
+ "model": {
+  "value": "CDP-CE525",
+  "confidence": 0.95,
+  "raw_text": "CDP-CE525"
+ },
+ "serial": {
+  "value": "5104890",
+  "confidence": 0.95,
+  "raw_text": "5104890"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.95,
+  "raw_text": "COMPACT DISC PLAYER"
+ }
+}

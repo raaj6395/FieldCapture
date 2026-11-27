@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "CANADAIR",
+  "confidence": 1.0,
+  "raw_text": "CANADAIR"
+ },
+ "model": {
+  "value": "CT 114",
+  "confidence": 1.0,
+  "raw_text": "CT 114"
+ },
+ "serial": {
+  "value": "26172",
+  "confidence": 1.0,
+  "raw_text": "26172"
+ },
+ "mfg_date": {
+  "value": "1966-05-04",
+  "confidence": 0.9,
+  "raw_text": "4-5-66"
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1.0,
+  "raw_text": null
+ }
+}

@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "L.ZIELENIEWSKI FITZNER-GAMPER S.A",
+  "confidence": 1.0,
+  "raw_text": "L.ZIELENIEWSKI FITZNER-GAMPER S.A"
+ },
+ "model": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "serial": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.8,
+  "raw_text": null
+ }
+}

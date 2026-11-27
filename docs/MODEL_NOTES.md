@@ -32,3 +32,33 @@ Measured with `tools/eval_ocr.py` on the 25 web nameplates and their synthetic v
 - Full resolution is not better than 640 px (eval all fields 13 correct vs 12, wrong-answer confidence higher), so the 640x480 mock captures are not the bottleneck.
 - Latency on the phone at 640 px: median 71 ms, p90 119 ms (n=125); 378 ms for the first call of a fresh process (model load). Cost 0.
 - Live check on job 5C1FE517: capture -> OCR -> upload -> finalize works end to end; with no text in view every field is null with confidence 0.
+
+## 2026-11-27 - Phase 5 step 2: Gemini as second nameplate reader (no Cloud Vision key available)
+
+Free-tier guard in `backend/gemini.py` (checked before every call, all calls logged to `backend/logs/calls.jsonl` incl. timeouts): >= 13 s between calls (< 5 RPM), daily cap per model per Pacific day: gemini-3.1-flash-lite 450 (user reports a 500/day quota), every other model 18 (public reports say 2.5-flash free tier may be as low as 20/day). HTTP 429 stops the run; 503 moves to the next model. Results cached per model and file, never re-sent. Backend only calls Gemini when `FC_VLM=1`; on any failure the capture keeps its ML Kit fields.
+
+Calls made today: 22 (2.5-flash 5, 3.1-flash-lite 12, 3.5-flash 5 of which 2 timed out at 60 s).
+
+Bake-off, same prompt (`backend/prompts/nameplate.txt`), 5 tune plates at 640 px:
+
+| model | correct | wrong | missed | median latency | in / out tokens |
+|---|---|---|---|---|---|
+| ML Kit + rules | 6 | 3 | 4 | 71 ms (phone) | - |
+| gemini-3.1-flash-lite | 11 | 2 | 0 | 2.8 s | 1334 / 212 |
+| gemini-2.5-flash | 10 | 3 | 0 | 2.7 s | 527 / 160 |
+| gemini-3.5-flash | 7 (3 files) | 0 | 0 | 17.8 s, 2 timeouts | 1335 / 156 |
+
+Choice: **gemini-3.1-flash-lite** - most accurate here, ~3 s, and the only model with a quota large enough for the eval. 3.5-flash is too slow for a field reply. Gemini 3 models bill ~2.5x the input tokens of 2.5-flash for the same 640 px image (higher default media resolution).
+
+All 12 tune plates (dates scored on the year: day/month order on old plates is ambiguous and only the year feeds appliance age):
+
+| source | correct | wrong | missed | mean conf correct / wrong |
+|---|---|---|---|---|
+| ML Kit only | 12 | 10 | 11 | 0.56 / 0.30 |
+| Gemini only | 30 | 4 | 0 | 0.89 / 0.81 |
+| combined (agree / solo / conflict) | 30 | 4 | 0 | 0.66 / 0.42 |
+
+- Gemini's own confidence barely moves when it is wrong (0.81). It invented a "ZP" prefix on a model code cut off at the frame edge and guessed an overstruck serial, both fields labelled unreadable. Agreement with ML Kit is what brings confidence down on those (0.38 and 0.28).
+- Combination rule: both agree -> 1-(1-a)(1-b); only one reader has a value -> x0.7; readers disagree -> higher one x0.4. Weights are first guesses, to be fitted on the tune split in Phase 7.
+- Fixed along the way: my label for web_np_14 ("4-5-66", US order) was written 1966-05-04, now 1966-04-05; text normalisation now folds umlauts (Buhrer vs Bührer counted wrong before).
+- Not run yet (needs approval): 13 eval plates and 100 synthetic variants on 3.1-flash-lite = 113 calls.

@@ -1,0 +1,27 @@
+{
+ "make": {
+  "value": "Fritz B\u00fchrer",
+  "confidence": 1.0,
+  "raw_text": "Fritz B\u00fchrer"
+ },
+ "model": {
+  "value": "UNM4/10",
+  "confidence": 1.0,
+  "raw_text": "UNM4/10"
+ },
+ "serial": {
+  "value": "11460",
+  "confidence": 1.0,
+  "raw_text": "11460"
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0.0,
+  "raw_text": null
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 1.0,
+  "raw_text": "Traktoren"
+ }
+}
