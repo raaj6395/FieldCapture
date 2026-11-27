@@ -1,8 +1,16 @@
 {
   "provisional": true,
   "edge_e": 20,
-  "dark_mean": 45,
-  "dark_frac": 0.5,
-  "nameplate": { "blur": 60, "glare_frac": 0.08, "empty_edge_density": 0.01, "border_edge_frac": 0.45 },
-  "damage": { "blur": 15 }
+  "dark_mean": 44.9688,
+  "dark_frac": 1.0,
+  "nameplate": {
+    "blur": 70.6603,
+    "glare_frac": 0.3238,
+    "empty_edge_density": 0.01,
+    "border_edge_frac": null
+  },
+  "damage": {
+    "blur": 5.6166
+  },
+  "tuned_on": "web + synthetic tune split; retune on real glasses frames"
 }

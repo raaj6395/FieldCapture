@@ -108,3 +108,35 @@ Real glasses: glasses mic -> on-glasses ASR -> DAT Speech -> app. Mock: phone mi
 
 ### What the mock cannot simulate
 Real battery drain curve and charge-while-recording, real heat build-up and the throttling the glasses apply themselves, Bluetooth range / interference / slow reconnects, glasses camera optics, exposure and low-light noise (the mock uses the phone camera), real glasses-mic audio in wind/noise, speaker-to-mic echo on the glasses, firmware-initiated session stops, multiple glasses nearby.
+
+## 2026-11-27 - Phase 4 quality gate tuning
+
+Data: 25 web nameplates and 18 web damage photos (`data/web/labels.csv`, CC/PD from Wikimedia Commons, provenance per row), 151 synthetic variants of them (`tools/synth.py`: dark, blurry, glare, cut_off; each variant keeps its parent's split), and 8 of the user's own phone photos with a visual sharp/blurry label (`data/real_quality.csv`). Web, synthetic and real are reported separately. No real glasses frames yet, so `thresholds.json` stays `provisional`.
+
+Method (`tools/tune_thresholds.py --write`): per check, pick the threshold on the tune split that catches the most synthetic failures while rejecting at most 10% of good originals, then take the middle of the gap between classes (geometric middle for blur, since Laplacian variance scales multiplicatively). `edge_e` is not tuned because the Kotlin/Python parity fixtures depend on it.
+
+| check | value | tune: catches / false-rejects |
+|---|---|---|
+| dark_mean | 45.0 | 100% / 0% |
+| dark_frac | off (1.0) | black plates (Miele, Sony, Luftwerk) are legitimately mostly dark; dark_mean alone already catches every dark variant |
+| nameplate blur | 70.7 | 100% / 0% |
+| damage blur | 5.6 | 100% / 0% |
+| nameplate glare_frac | 0.32 | 100% / 0% |
+| nameplate cut_off | off (null) | best fit caught 58% but rejected 3/13 good eval plates and the user's sharp Razer label: text touching the frame edge is also what a well-filled close-up looks like, and a false reject ends in a "low" capture whose line items all go to review |
+
+End-to-end with shipped thresholds:
+
+| set | good passed | dark | blurry | glare | cut_off |
+|---|---|---|---|---|---|
+| web nameplate, tune | 12/12 | 12/12 | 12/12 | 12/12 | 0/12 (off) |
+| web nameplate, eval | 12/13 (Luftwerk black plate -> dark) | 13/13 | 13/13 | 12/13 | 3/13 flagged for other reasons |
+| web damage, tune | 9/9 | 9/9 | 9/9 | 0/9 (not checked for damage) | - |
+| web damage, eval | 9/9 | 8/8 | 8/8 | 0/8 | - |
+| user phone photos | 5/5 | - | 2/3 (dim out-of-focus logo passes at blur 94) | - | - |
+
+Gotchas:
+- The first synthetic blur was too strong: every blurred variant scored <= 20 and every good photo >= 245, so any value in that gap fit the web data. The arithmetic middle (132) would have rejected the user's sharp Razer label (120). Real photos put the boundary between 94 and 117; the geometric middle (71) sits inside it.
+- Wikimedia only serves standard thumbnail widths (330, 1280...); 320px returned 404 HTML that was saved as .jpg. `fetch_web.py` now rejects non-image bytes.
+- Excluded from the web set on purpose: faces, mugshots, police sketches, Nazi insignia, a memorial plate with a person's name and death date, and FBI evidence photos (Epstein Files Transparency Act release).
+
+Still needed: real frames from glasses (or the mock camera) for blur and glare, since phone and web photos are sharper than a 7-15 fps head-mounted stream; then rerun the tuner on those and drop `provisional`.
