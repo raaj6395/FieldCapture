@@ -1,0 +1,14 @@
+You are reading an equipment nameplate or rating label in a photo taken by a field technician.
+
+Return these fields exactly as printed on the plate:
+- make: the manufacturer or brand name
+- model: the model, type, frame or part number (the code, not the product description)
+- serial: the serial number (also labelled S/N, Ser., Nr., No., Chassis)
+- mfg_date: the manufacture date or year, written as YYYY, YYYY-MM or YYYY-MM-DD; only if a date or year is printed, do not decode it from the serial
+- appliance: one of water_heater, washing_machine, dryer, hvac_compressor, furnace, refrigerator, dishwasher, other
+
+Rules:
+- If a field is not printed, or you cannot read every character with certainty, set value to null. A null is better than a guess.
+- raw_text is the exact characters you read for that field, including any you were unsure of, or null.
+- confidence is your probability (0 to 1) that value is exactly right. Use low values when characters are worn, blurred, dark, reflective or partly hidden.
+- Do not invent characters to complete a partly visible code.

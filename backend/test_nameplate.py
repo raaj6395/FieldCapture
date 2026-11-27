@@ -69,3 +69,43 @@ def test_endpoint_fills_nameplate_fields_and_record_validates(tmp_path, monkeypa
     assert f["make"]["value"] == "Rheem" and f["serial"]["value"] == "Q081234567" and f["mfg_date"]["value"] == "2011-04"
     assert (tmp_path / "jobs/J2/captures/c01.ocr.json").exists()
     assert {i["code"] for i in r.json()["line_items"]} == {"WH-RPL"}
+
+
+def vlm(**fields):
+    return {k: {"value": v, "confidence": c, "raw_text": v} for k, (v, c) in fields.items()}
+
+
+def test_two_readers_agreeing_beats_either_alone_and_conflict_drops():
+    ml = nameplate.extract(ocr("RHEEM", "SERIAL Q081234567", conf=0.7), {"flag": "ok"})
+    agree = nameplate.combine(ml, nameplate.from_gemini(vlm(make=("Rheem", 0.9), serial=("Q081234567", 0.9)), {"flag": "ok"}))
+    conflict = nameplate.combine(ml, nameplate.from_gemini(vlm(make=("Rheem", 0.9), serial=("Q081284567", 0.95)), {"flag": "ok"}))
+    solo = nameplate.combine(nameplate.extract(ocr("RHEEM"), {"flag": "ok"}), nameplate.from_gemini(vlm(serial=("Q081234567", 0.9)), {"flag": "ok"}))
+    assert agree["serial"]["confidence"] > max(ml["serial"]["confidence"], 0.9 * 1.0)
+    assert agree["serial"]["source"].endswith(":agree")
+    assert conflict["serial"]["source"].endswith(":conflict") and conflict["serial"]["confidence"] < 0.5
+    assert solo["serial"]["source"].endswith(":solo") and solo["serial"]["confidence"] < 0.9 * 0.8
+
+
+def test_vlm_null_strings_and_umlauts():
+    g = nameplate.from_gemini(vlm(make=("Fritz Bührer", 0.9), serial=("null", 0.9), model=("N/A", 0.5)), {"flag": "ok"})
+    assert g["serial"]["value"] is None and g["serial"]["confidence"] == 0.0 and g["model"]["value"] is None
+    assert nameplate.norm("Bührer") == nameplate.norm("Buhrer")
+
+
+def test_vlm_off_by_default_no_api_call(tmp_path, monkeypatch):
+    monkeypatch.setattr(backend, "STORE", tmp_path)
+    monkeypatch.delenv("FC_VLM", raising=False)
+    monkeypatch.setattr(backend.gemini, "generate", lambda *a, **k: (_ for _ in ()).throw(AssertionError("api called")))
+    meta = {"job_id": "J3", "capture_id": "c01", "type": "nameplate", "taken_at": 1795700000000, "quality": {"flag": "ok"}, "ocr": ocr("SERIAL 12345678")}
+    assert TestClient(backend.app).post("/captures", data={"meta": json.dumps(meta)}, files={"photo": ("c01.jpg", b"\xff\xd8x", "image/jpeg")}).status_code == 201
+
+
+def test_vlm_failure_keeps_ocr_fields(tmp_path, monkeypatch):
+    monkeypatch.setattr(backend, "STORE", tmp_path)
+    monkeypatch.setenv("FC_VLM", "1")
+    monkeypatch.setattr(backend.gemini, "generate", lambda *a, **k: (_ for _ in ()).throw(RuntimeError("503")))
+    meta = {"job_id": "J4", "capture_id": "c01", "type": "nameplate", "taken_at": 1795700000000, "quality": {"flag": "ok"}, "ocr": ocr("SERIAL 12345678")}
+    c = TestClient(backend.app)
+    assert c.post("/captures", data={"meta": json.dumps(meta)}, files={"photo": ("c01.jpg", b"\xff\xd8x", "image/jpeg")}).status_code == 201
+    rec = json.loads((tmp_path / "jobs/J4/captures/c01.json").read_text())
+    assert rec["fields"]["serial"]["value"] == "12345678" and rec["fields"]["serial"]["source"] == "ocr:mlkit"

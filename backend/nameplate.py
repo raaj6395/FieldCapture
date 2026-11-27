@@ -1,4 +1,5 @@
 import re
+import unicodedata
 from datetime import date
 
 BRANDS = [
@@ -20,7 +21,8 @@ STOP = r"(?:MODEL|SERIAL|S/N|TYPE|DATE|MFG|NO\.?|NR\.?|V|HZ|KW|HP|RPM|A|W|IP)\b"
 
 
 def norm(s):
-    return re.sub(r"[^A-Z0-9]", "", (s or "").upper())
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode()
+    return re.sub(r"[^A-Z0-9]", "", s.upper())
 
 
 def fix_label(text):
@@ -148,6 +150,79 @@ CODE = r"[A-Z0-9][A-Z0-9\-/.,]{1,24}(?:\s[A-Z0-9][A-Z0-9\-/.]{0,8}){0,2}"
 SERIAL = r"[A-Z0-9][A-Z0-9\-_]{3,24}"
 
 
+def code_ok(v):
+    n = norm(v)
+    return 1.0 if 3 <= len(n) <= 24 and re.search(r"[A-Z0-9]", n) else 0.5
+
+
+def serial_ok(v):
+    n = norm(v)
+    return 1.0 if 4 <= len(n) <= 24 and re.search(r"\d", n) and " " not in v.strip() else 0.5
+
+
+def date_ok(v):
+    _, y = parse_date(v or "")
+    return 1.0 if y and 1900 <= y <= TODAY.year else 0.3
+
+
+def make_ok(v):
+    return 1.0 if any(norm(b) == norm(v) or (len(norm(b)) >= 5 and norm(b) in norm(v)) for b in BRANDS) else 0.8
+
+
+VALIDATE = {"make": make_ok, "model": code_ok, "serial": serial_ok, "mfg_date": date_ok, "appliance": lambda v: 0.8}
+FIELDS = ["make", "model", "serial", "mfg_date", "appliance"]
+AGREE, SOLO, CONFLICT = "agree", "solo", "conflict"
+WEIGHT = {AGREE: 1.0, SOLO: 0.7, CONFLICT: 0.4}
+
+
+def same(f, a, b):
+    na, nb = norm(a), norm(b)
+    if f == "make":
+        return len(na) >= 3 and len(nb) >= 3 and (na in nb or nb in na)
+    if f == "mfg_date":
+        return parse_date(a)[0] == parse_date(b)[0]
+    return na == nb
+
+
+def from_gemini(resp, quality=None, model="gemini"):
+    q = quality_factor(quality)
+    out = {}
+    for f in FIELDS:
+        r = (resp or {}).get(f) or {}
+        v = r.get("value")
+        v = None if v is None or str(v).strip().lower() in ("", "null", "none", "unknown", "n/a", "other") else str(v).strip()
+        if f == "mfg_date" and v:
+            v = parse_date(v)[0] or v
+        m = float(r.get("confidence") or 0.0)
+        valid = VALIDATE[f](v) if v else 0.0
+        out[f] = {"value": v, "confidence": round(max(0.0, min(1.0, m * q * valid)), 3) if v else 0.0, "raw_text": r.get("raw_text"),
+                  "source": f"vlm:{model}", "signals": {"model": round(m, 3), "quality": q, "validation": valid}}
+    return out
+
+
+def combine(ml, gm):
+    out = {}
+    for f in FIELDS:
+        a, b = ml.get(f, {"value": None, "confidence": 0.0}), gm.get(f, {"value": None, "confidence": 0.0})
+        if a["value"] is None and b["value"] is None:
+            out[f] = dict(b, signals=dict(b.get("signals", {}), agreement=0.0))
+            continue
+        if a["value"] is not None and b["value"] is not None and same(f, a["value"], b["value"]):
+            how, pick = AGREE, b
+            conf = 1 - (1 - a["confidence"]) * (1 - b["confidence"])
+        elif a["value"] is None or b["value"] is None:
+            how, pick = SOLO, a if b["value"] is None else b
+            conf = pick["confidence"] * WEIGHT[SOLO]
+        else:
+            how = CONFLICT
+            pick = a if a["confidence"] > b["confidence"] else b
+            conf = pick["confidence"] * WEIGHT[CONFLICT]
+        out[f] = {"value": pick["value"], "confidence": round(min(1.0, conf), 3), "raw_text": pick.get("raw_text"),
+                  "source": f"{a.get('source')}+{b.get('source')}:{how}",
+                  "signals": dict(pick.get("signals", {}), agreement=WEIGHT[how], ocr_conf=a["confidence"], vlm_conf=b["confidence"])}
+    return out
+
+
 def extract(ocr, quality=None):
     lines = (ocr or {}).get("lines", [])
     q = quality_factor(quality)
@@ -159,14 +234,6 @@ def extract(ocr, quality=None):
         serial, sline = after_label(lines, LABEL["serial_weak"], SERIAL, exclude=LABEL["model"])
     mfg, year, dline = find_date(lines)
     appliance, aline = find_appliance(lines)
-
-    def code_ok(v):
-        n = norm(v)
-        return 1.0 if 3 <= len(n) <= 24 and re.search(r"[A-Z0-9]", n) else 0.5
-
-    def serial_ok(v):
-        n = norm(v)
-        return 1.0 if 4 <= len(n) <= 24 and re.search(r"\d", n) and " " not in v else 0.5
 
     return {
         "make": field(make, mline["conf"] if mline else 0.0, q, mvalid, mline["text"] if mline else None),
