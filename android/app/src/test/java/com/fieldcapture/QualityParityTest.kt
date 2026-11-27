@@ -55,4 +55,14 @@ class QualityParityTest {
     val sharp = QualityScores(120.0, 120.0, 0.01, 0.0, 0.07, 0.3)
     assertEquals(emptyList<String>(), Quality.verdict(sharp, "nameplate", t))
   }
+
+  @Test
+  fun textRunningOffTheFrameIsCutOff() {
+    val inside = "MODEL XR-200" to intArrayOf(100, 200, 500, 240)
+    val atRight = "SERIAL 4471" to intArrayOf(300, 260, 639, 300)
+    val shortAtEdge = "UL" to intArrayOf(0, 10, 30, 40)
+    assertEquals(0, Quality.textAtEdge(listOf(inside, shortAtEdge), 640, 480, 0.03))
+    assertEquals(1, Quality.textAtEdge(listOf(inside, atRight), 640, 480, 0.03))
+    assertEquals(1, Quality.textAtEdge(listOf("WATER HEATER" to intArrayOf(80, 2, 400, 40)), 640, 480, 0.03))
+  }
 }

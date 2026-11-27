@@ -34,6 +34,15 @@ object Ocr {
     return JSONObject().put("engine", ENGINE).put("ms", SystemClock.elapsedRealtime() - t).put("w", bmp.width).put("h", bmp.height).put("lines", lines)
   }
 
+  fun lines(o: JSONObject): List<Pair<String, IntArray>> {
+    val a = o.getJSONArray("lines")
+    return (0 until a.length()).map { i ->
+      val l = a.getJSONObject(i)
+      val b = l.getJSONArray("box")
+      l.getString("text") to IntArray(b.length()) { b.getInt(it) }
+    }
+  }
+
   fun fit(bmp: Bitmap, longSide: Int): Bitmap {
     val s = longSide.toFloat() / maxOf(bmp.width, bmp.height)
     return if (s >= 1f) bmp else Bitmap.createScaledBitmap(bmp, (bmp.width * s).toInt(), (bmp.height * s).toInt(), true)

@@ -200,7 +200,7 @@ class JobSession(private val app: Application) {
 
   fun stopJob() {
     if (!transition(Ev.STOP, "end job")) return say("No job.")
-    say("Job ended. ${job.captures.size} photos, ${job.notes.size} notes.")
+    say("Job ended. ${plural(job.captures.size, "photo")}, ${plural(job.notes.size, "note")}.")
   }
 
   fun pause() {
@@ -523,7 +523,7 @@ class JobSession(private val app: Application) {
     capture(shot, "capture button", null)
   }
 
-  private class Attempt(val bytes: ByteArray, val ext: String, val scores: QualityScores, val reasons: List<String>)
+  private class Attempt(val bytes: ByteArray, val ext: String, val scores: QualityScores, val reasons: List<String>, val ocr: JSONObject? = null)
 
   private fun capture(shot: Shot, transcript: String?, conf: Float?, retakeOf: String? = null) {
     scope.launch {
@@ -553,10 +553,9 @@ class JobSession(private val app: Application) {
         timing["shot"] = System.currentTimeMillis()
         val id = "c%02d".format(job.captures.size + 1)
         val file = File(jobDir(), "$id.${b.ext}").apply { writeBytes(b.bytes) }
-        if (shot.kind == "nameplate") {
-          runCatching { withContext(Dispatchers.Default) { Ocr.read(upright(b.bytes)) } }
-              .onSuccess { o -> File(jobDir(), "$id.ocr.json").writeText(o.toString()); log("ocr $id: ${o.getJSONArray("lines").length()} lines in ${o.getLong("ms")}ms") }
-              .onFailure { log("ocr $id FAILED: $it") }
+        b.ocr?.let { o ->
+          File(jobDir(), "$id.ocr.json").writeText(o.toString())
+          log("ocr $id: ${o.getJSONArray("lines").length()} lines in ${o.getLong("ms")}ms")
           timing["ocr"] = System.currentTimeMillis()
         }
         val flag = if (b.reasons.isEmpty()) "ok" else "low"
@@ -589,7 +588,11 @@ class JobSession(private val app: Application) {
       val bmp = upright(bytes)
       val px = IntArray(bmp.width * bmp.height).also { bmp.getPixels(it, 0, bmp.width, 0, 0, bmp.width, bmp.height) }
       val scores = Quality.score(px, bmp.width, bmp.height, thresholds)
-      Attempt(bytes, ext, scores, Quality.verdict(scores, kind, thresholds))
+      val ocr = if (kind == "nameplate") runCatching { Ocr.read(bmp) }.onFailure { log("ocr FAILED: $it") }.getOrNull() else null
+      val margin = thresholds.kinds.getValue(kind).textEdgeMargin
+      val atEdge = if (ocr != null && margin != null) Quality.textAtEdge(Ocr.lines(ocr), ocr.getInt("w"), ocr.getInt("h"), margin) else 0
+      val reasons = Quality.verdict(scores, kind, thresholds).let { if (atEdge > 0 && "cut_off" !in it) it + "cut_off" else it }
+      Attempt(bytes, ext, scores, reasons, ocr)
     }
   }
 
@@ -628,7 +631,7 @@ class JobSession(private val app: Application) {
         darkFrac = o.getDouble("dark_frac"),
         kinds = listOf("nameplate", "damage").associateWith { k ->
           val j = o.getJSONObject(k)
-          KindThresholds(j.getDouble("blur"), j.dbl("glare_frac"), j.dbl("empty_edge_density"), j.dbl("border_edge_frac"))
+          KindThresholds(j.getDouble("blur"), j.dbl("glare_frac"), j.dbl("empty_edge_density"), j.dbl("border_edge_frac"), j.dbl("text_edge_margin"))
         },
         provisional = o.optBoolean("provisional"),
     ).also { log("quality thresholds loaded${if (it.provisional) " (PROVISIONAL)" else ""}") }

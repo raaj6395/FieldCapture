@@ -12,7 +12,7 @@ data class QualityScores(
     val borderEdgeFrac: Double,
 )
 
-data class KindThresholds(val blur: Double, val glareFrac: Double? = null, val emptyEdgeDensity: Double? = null, val borderEdgeFrac: Double? = null)
+data class KindThresholds(val blur: Double, val glareFrac: Double? = null, val emptyEdgeDensity: Double? = null, val borderEdgeFrac: Double? = null, val textEdgeMargin: Double? = null)
 
 data class Thresholds(
     val edgeE: Double,
@@ -104,6 +104,10 @@ object Quality {
       if (k.emptyEdgeDensity != null && s.edgeDensity < k.emptyEdgeDensity) add("empty")
       if (k.borderEdgeFrac != null && s.borderEdgeFrac > k.borderEdgeFrac) add("cut_off")
     }
+  }
+
+  fun textAtEdge(lines: List<Pair<String, IntArray>>, w: Int, h: Int, margin: Double) = lines.count { (text, b) ->
+    text.trim().length >= 3 && b.size == 4 && (b[0] <= margin * w || b[1] <= margin * h || b[2] >= w - margin * w || b[3] >= h - margin * h)
   }
 
   fun prompt(reason: String) = when (reason) {
