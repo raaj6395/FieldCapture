@@ -55,3 +55,48 @@ Probe app: buttons drive the mock + DAT calls, every state change logged with ta
 ### Other
 - Debug build of our app: 1m24s with a warm Gradle cache.
 - Samsung: a stray Back gesture finishes the activity; the process is then killed fast in the background. The real app needs a foreground service while a job is active.
+
+## 2026-11-27 - Phase 2/3 drills (JobSession on the mock)
+
+Driven with `tools/fc.sh` (adb broadcast -> same calls as the on-screen buttons, works with the screen off). Mock only, untested on hardware.
+
+### Our job vs the SDK session
+- One `JobRecord` (IDLE / CONNECTING / ACTIVE / PAUSED / RECONNECTING / STOPPED) outlives any number of `DeviceSession`s. Persisted to `jobs/<id>/session.json` on every transition.
+- Drop signals handled: session STOPPED, stream CLOSED / CRITICAL_STREAM_ERROR / HINGE_CLOSED, active device -> null, no frame for 5 s (watchdog).
+- Reconnect: drop the dead session (never reuse), wait until the device is back **and unfolded and donned**, new session, backoff 1/2/4/8/15/30 s on failures, never gives up while the job is open.
+
+### Drill results
+| Drill | Observed | Result |
+|---|---|---|
+| start -> pause -> resume -> stop | events logged in order; pause/resume via `session.pause()/resume()` | pass |
+| powerOff mid-walk | `activeDevice` -> null at once -> RECONNECTING in <0.1 s (the 5 s watchdog never needed on the mock) | pass |
+| powerOn | new session STARTED -> stream STREAMING -> ACTIVE in 0.7 s, same job_id | pass |
+| 2 captures, powerOff, powerOn, 1 more | c01-c03 all under job CB778C22 | pass |
+| doff | SDK did not pause by itself; we call `pause()` -> PAUSED in <0.1 s, "Glasses off. Paused." | pass |
+| don | we `resume()` -> ACTIVE (stream back after ~1.6 s) | pass |
+| fold | session STOPPED at once; **mock fold also sets don=DOFFED** | pass |
+| unfold (still doffed) | `createSession` OK but start fails: `No eligible device available` -> a doffed device can't host a session. Reconnect now waits for don and says "Put the glasses on to continue." | pass after fix |
+| captouch tap / tap | session + stream PAUSED -> PAUSED; tap again -> ACTIVE | pass |
+| thermal SEVERE / NONE | metadata thermalLevel updates; we removeCamera + addCamera LOW 7 fps and back to HIGH 15 fps. **Mock still delivers 480x640** (ignores config) | pass (logic only) |
+| battery 10% | spoken warning once, re-arms above 20% | pass |
+| screen off ~2 min | foreground service (connectedDevice+camera+microphone) + partial wake lock: capture and a powerOff/powerOn recovery both worked with the screen off | pass |
+| force-stop / reinstall mid-job | relaunch -> "restored job CB778C22 (10 captures)" -> RECONNECTING -> ACTIVE in 2.7 s | pass |
+
+### SDK / mock gotchas found
+- **Inputs after don**: re-adding Inputs while the session is PAUSED fails with a misleading `Session has already been stopped`. Re-add on the next STARTED instead (removeInputs + addInputs) -> capture button works again.
+- **Speech keeps working while the session is PAUSED** -> voice "resume" works; so pause can be a real `session.pause()`.
+- **Injected speech dies after a reconnect (mock bug?)**: on a second DAT session in the same process, `simulateTranscription` reports `isListening=true`, our new Speech is STARTED, but no transcription arrives. Failed on 11 of 13 reconnects tested; `speech.stop()/start()` and `removeSpeech()+addSpeech()` don't fix it; only an app restart does. Live phone ASR after reconnect: TODO (needs a human voice).
+- `transcriptions` is a StateFlow: two identical injected results in a row arrive once. Live ASR is unaffected (partials in between).
+- Mock powerOn gives the glasses a **new device identifier** each time.
+
+### Voice layer
+- Final transcripts only; parser is pure Kotlin (38 phrases in `CommandParserTest`).
+- **TTS echo**: in the mock the phone mic hears the phone speaker. "Resumed." came back as `Resume` 2.2-3.5 s later, longer than any sane mute window. Fix: mute while speaking + 0.5 s, and drop a final transcript that is contained in what we said in the last 6 s. Real glasses: speaker is centimetres from the mic, so the same filter is needed.
+- Too long a mute drops real commands (the e2e test caught this: command 2.5 s after "Ready." was dropped with a 1.5 s mute).
+- e2e instrumentation test (`VoiceE2ETest`): injected "capture nameplate", "Capture damage, kitchen, north wall.", a note, "capture damage ceiling" (room filled from last), chatter -> 3 captures + 1 note under one job. **Pass.**
+
+### README draft - audio path
+Real glasses: glasses mic -> on-glasses ASR -> DAT Speech -> app. Mock: phone mic -> Android on-device recogniser (`LIVE_DEVICE_ASR`) -> DAT Speech -> app. Same app code; the mock has no microphone of its own, so in the demo the voice physically goes into the phone. Replies use Android TextToSpeech (on glasses: BT audio to the glasses speakers). Capture button (DAT Inputs) repeats the last capture as a glove/noise backup.
+
+### What the mock cannot simulate
+Real battery drain curve and charge-while-recording, real heat build-up and the throttling the glasses apply themselves, Bluetooth range / interference / slow reconnects, glasses camera optics, exposure and low-light noise (the mock uses the phone camera), real glasses-mic audio in wind/noise, speaker-to-mic echo on the glasses, firmware-initiated session stops, multiple glasses nearby.
