@@ -124,12 +124,12 @@ Mean confidence: correct 0.64, wrong 0.41.
 |---|---|---|
 | gemini-2.5-flash | 200 | 5 |
 | gemini-3.1-flash-lite | timeout | 4 |
-| gemini-3.1-flash-lite | 200 | 81 |
-| gemini-3.1-flash-lite | 503 | 17 |
+| gemini-3.1-flash-lite | 200 | 113 |
+| gemini-3.1-flash-lite | 503 | 18 |
 | gemini-3.5-flash | timeout | 2 |
 | gemini-3.5-flash | 200 | 3 |
 
-Successful calls 89, input tokens 91240, output tokens 14961, thinking tokens 7778. All on the AI Studio free tier: $0 billed (free-tier requests may be used by Google to improve its models).
+Successful calls 121, input tokens 115832, output tokens 18974, thinking tokens 9476. All on the AI Studio free tier: $0 billed (free-tier requests may be used by Google to improve its models).
 
 ## Stretch D - cost and latency
 
@@ -143,7 +143,23 @@ Prices: gemini-3.1-flash-lite paid tier $0.25 / 1M input tokens, $1.50 / 1M outp
 
 Estimated cost per job for a typical walk (2 nameplates, 5 damage photos, 3 notes): **$0.0062**. On-device work is free: ML Kit OCR median 71 ms, p90 119 ms on the phone (n=125); the quality check runs inside the capture.
 
-Where the time goes (from the timestamps added to every capture: voice command -> quality check -> OCR -> save -> upload -> extraction -> stored): the model call (3-5 s) dominates; the spoken confirmation is given after the local save, so the tech never waits for the network or the model. `tools/cost_latency.py <job ids>` prints the per-stage median/p90 table for real walk-throughs (needs a walk recorded with the final build - see README, Known limitations).
+### Real walk-throughs (same 8-item walk each time: 6 captures, 2 notes; `tools/walk.sh`, `tools/cost_latency.py <job>`)
+
+| stage, median / p90 ms | walk 1: baseline | walk 2: lean | walk 3: lean + extraction after upload |
+|---|---|---|---|
+| voice command -> photo passed quality check | 314 / 329 | 324 / 361 | 323 / 333 |
+| on-device OCR + save | 6 / 94 | 3 / 90 | 6 / 72 |
+| queue wait before upload | 85 / 130 | 73 / 112 | 92 / 105 |
+| upload (phone -> server) | 180 / 185 | 182 / 194 | 183 / 186 |
+| phone's upload request held by the server | extraction inside: ~10 000 | extraction inside | **2 / 4** |
+| extraction (model call incl. free-tier spacing and retries) | 9 968 / 14 127 | 2 002 / 14 488 | 2 150 / 2 699 |
+| **END TO END: voice command -> capture has its fields** | **14 656 / 17 081** | 8 998 / 30 558 | **2 938 / 3 252** |
+| model calls / cost per job (paid-tier price) | 7 / **$0.00480** | 8 / **$0.00239** | 6 / $0.00182 |
+
+- **Cost per job halved:** $0.00480 -> $0.00239 (50%) on the same walk with the `lean` profile, and $0.00182 on walk 3 (no Google retries that time).
+- **Latency:** walk 2 exposed a design flaw: extraction ran inside the upload request, so a Google 503 retry (20 s) plus our free-tier spacing (13 s) pushed two uploads past the phone's 30 s timeout. Nothing was lost (the backend had stored the capture; the retry got "200 exists"), but the end-to-end p90 hit 30.6 s. Fix: the server stores the photo and answers in 2 ms, extraction runs in the background, finalize waits for pending extractions (and answers 503 so the phone retries if one is still running). Walk 3: end to end 2.9 s median, 3.3 s p90, down from 14.7 s / 17.1 s on walk 1. Part of the walk-to-walk difference is Google's 503 retries (walks 1-2 hit them, walk 3 did not); the causal part is that the phone no longer waits for the model.
+- The spoken confirmation is given after the local save (about 0.3 s after the command), so the tech never waits for the network or the model in any walk.
+- Offline walk (walk 4, sample job_3): 0 uploads while offline, all 8 items uploaded in 0.15 s when the network returned, record complete 101 s later because the 8 extractions run one at a time, 13 s apart, under the free-tier rate guard; on a paid tier without the guard this would be ~8 x 2-4 s.
 
 **Cost cut (target: half).** Image tokens and thinking tokens were most of the bill, and the answer repeated every value as `raw_text`. A `lean` profile (`FC_PROFILE=lean`) sets `mediaResolution: LOW`, `thinkingLevel: minimal` and drops `raw_text` from the nameplate answer:
 

@@ -1,0 +1,651 @@
+{
+  "schema_version": "1.0",
+  "job_id": "7CA40F62",
+  "tech_id": "tech-1",
+  "status": "complete",
+  "missing": [],
+  "finalized_at_ms": 1795768156760,
+  "started_at": "2026-11-27T08:27:09.291Z",
+  "ended_at": "2026-11-27T08:29:16.288Z",
+  "device": {
+    "type": "mock",
+    "sdk_version": "DAT 1.1.0"
+  },
+  "session_events": [
+    {
+      "type": "start",
+      "at": "2026-11-27T08:27:09.291Z",
+      "transition": "IDLE->CONNECTING",
+      "cause": "start job"
+    },
+    {
+      "type": "connected",
+      "at": "2026-11-27T08:27:11.179Z",
+      "transition": "CONNECTING->ACTIVE",
+      "cause": "streaming"
+    },
+    {
+      "type": "stop",
+      "at": "2026-11-27T08:29:16.288Z",
+      "transition": "ACTIVE->STOPPED",
+      "cause": "end job"
+    }
+  ],
+  "captures": [
+    {
+      "capture_id": "c01",
+      "type": "nameplate",
+      "taken_at": "2026-11-27T08:27:25.311Z",
+      "received_at": "2026-11-27T08:27:25.634Z",
+      "photo": "captures/c01.jpg",
+      "voice_command": "capture nameplate",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 3,
+        "scores": {
+          "blur": 234.09563698699924,
+          "brightness": 98.32420469616333,
+          "dark_frac": 0.08443287037037037,
+          "glare_frac": 0.06086033950617284,
+          "edge_density": 0.08095299315116523,
+          "border_edge_frac": 0.08864505883202195
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "make": {
+          "value": "BenQ",
+          "confidence": 0.32,
+          "raw_text": "BenQ",
+          "source": "ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict",
+          "signals": {
+            "model": 1.0,
+            "quality": 1.0,
+            "validation": 0.8,
+            "agreement": 0.4,
+            "ocr_conf": 0.237,
+            "vlm_conf": 0.8
+          }
+        },
+        "model": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        },
+        "serial": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        },
+        "mfg_date": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        },
+        "appliance": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.9,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        }
+      },
+      "timing": {
+        "cmd": 1795768035422,
+        "shot": 1795768044859,
+        "ocr": 1795768045310,
+        "saved": 1795768045315,
+        "upload_start": 1795768045445,
+        "received": 1795768045632,
+        "extract_start": 1795768045634,
+        "extract_done": 1795768050048,
+        "stored": 1795768050048
+      }
+    },
+    {
+      "capture_id": "c02",
+      "type": "damage",
+      "taken_at": "2026-11-27T08:27:30.847Z",
+      "received_at": "2026-11-27T08:27:31.097Z",
+      "photo": "captures/c02.jpg",
+      "voice_command": "capture damage kitchen north wall",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 430.3793067804705,
+          "brightness": 120.15597710793143,
+          "dark_frac": 0.07509259259259259,
+          "glare_frac": 0.012908307613168725,
+          "edge_density": 0.14301909726280357,
+          "border_edge_frac": 0.1695677045027376
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "kitchen",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "north wall",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "damage_type": {
+          "value": "none",
+          "confidence": 1.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "The image shows the back of a computer monitor and desk equipment, with no visible wall or building damage.",
+          "signals": {
+            "model": 1.0,
+            "quality": 1.0
+          }
+        },
+        "size_cm": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "reference: none"
+        }
+      },
+      "timing": {
+        "cmd": 1795768050536,
+        "shot": 1795768050841,
+        "saved": 1795768050848,
+        "upload_start": 1795768050924,
+        "received": 1795768051096,
+        "extract_start": 1795768051097,
+        "extract_done": 1795768079339,
+        "stored": 1795768079339
+      }
+    },
+    {
+      "capture_id": "c03",
+      "type": "damage",
+      "taken_at": "2026-11-27T08:27:45.970Z",
+      "received_at": "2026-11-27T08:27:59.526Z",
+      "photo": "captures/c03.jpg",
+      "voice_command": "capture damage kitchen ceiling",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 710.6440968935848,
+          "brightness": 104.05510091721978,
+          "dark_frac": 0.10035300925925926,
+          "glare_frac": 0.011638374485596709,
+          "edge_density": 0.1937542366938594,
+          "border_edge_frac": 0.1957111834961998
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "kitchen",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "ceiling",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "damage_type": {
+          "value": "none",
+          "confidence": 0.95,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "The image shows the back of a computer monitor and cables, with no visible damage to the ceiling surface.",
+          "signals": {
+            "model": 0.95,
+            "quality": 1.0
+          }
+        },
+        "size_cm": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "reference: none"
+        }
+      },
+      "timing": {
+        "cmd": 1795768065640,
+        "shot": 1795768065969,
+        "saved": 1795768065971,
+        "upload_start": 1795768079343,
+        "received": 1795768079524,
+        "extract_start": 1795768079526,
+        "extract_done": 1795768082721,
+        "stored": 1795768082721
+      }
+    },
+    {
+      "capture_id": "c04",
+      "type": "nameplate",
+      "taken_at": "2026-11-27T08:28:16.281Z",
+      "received_at": "2026-11-27T08:28:16.549Z",
+      "photo": "captures/c04.jpg",
+      "voice_command": "capture nameplate",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 704.3783902199955,
+          "brightness": 103.98564173030617,
+          "dark_frac": 0.0997511574074074,
+          "glare_frac": 0.011702674897119342,
+          "edge_density": 0.1902947570183025,
+          "border_edge_frac": 0.19208328215206977
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "make": {
+          "value": "BenQ",
+          "confidence": 0.32,
+          "raw_text": "BenQ",
+          "source": "ocr:mlkit+vlm:gemini-3.1-flash-lite:conflict",
+          "signals": {
+            "model": 1.0,
+            "quality": 1.0,
+            "validation": 0.8,
+            "agreement": 0.4,
+            "ocr_conf": 0.248,
+            "vlm_conf": 0.8
+          }
+        },
+        "model": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        },
+        "serial": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        },
+        "mfg_date": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": null,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        },
+        "appliance": {
+          "value": null,
+          "confidence": 0.0,
+          "raw_text": "monitor",
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.9,
+            "quality": 1.0,
+            "validation": 0.0,
+            "agreement": 0.0
+          }
+        }
+      },
+      "timing": {
+        "cmd": 1795768095872,
+        "shot": 1795768096188,
+        "ocr": 1795768096281,
+        "saved": 1795768096282,
+        "upload_start": 1795768096368,
+        "received": 1795768096547,
+        "extract_start": 1795768096549,
+        "extract_done": 1795768107537,
+        "stored": 1795768107537
+      }
+    },
+    {
+      "capture_id": "c05",
+      "type": "damage",
+      "taken_at": "2026-11-27T08:28:31.266Z",
+      "received_at": "2026-11-27T08:28:31.530Z",
+      "photo": "captures/c05.jpg",
+      "voice_command": "capture damage bathroom floor",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 706.0819317635013,
+          "brightness": 103.2590215972014,
+          "dark_frac": 0.10559027777777778,
+          "glare_frac": 0.011654449588477367,
+          "edge_density": 0.19043500619433862,
+          "border_edge_frac": 0.19332269547072542
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "bathroom",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "floor",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "damage_type": {
+          "value": "none",
+          "confidence": 1.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "The image shows the back of a computer monitor and cables, with no visible damage to the floor or bathroom surfaces.",
+          "signals": {
+            "model": 1.0,
+            "quality": 1.0
+          }
+        },
+        "size_cm": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "reference: none"
+        }
+      },
+      "timing": {
+        "cmd": 1795768110970,
+        "shot": 1795768111264,
+        "saved": 1795768111267,
+        "upload_start": 1795768111351,
+        "received": 1795768111529,
+        "extract_start": 1795768111530,
+        "extract_done": 1795768125656,
+        "stored": 1795768125656
+      }
+    },
+    {
+      "capture_id": "c06",
+      "type": "damage",
+      "taken_at": "2026-11-27T08:29:01.482Z",
+      "received_at": "2026-11-27T08:29:01.728Z",
+      "photo": "captures/c06.jpg",
+      "voice_command": "capture damage hallway wall",
+      "asr_confidence": 0.8999999761581421,
+      "retake_of": null,
+      "quality": {
+        "passed": true,
+        "flag": "ok",
+        "attempts": 1,
+        "scores": {
+          "blur": 703.9943082618399,
+          "brightness": 104.02459532260241,
+          "dark_frac": 0.10575231481481481,
+          "glare_frac": 0.011654449588477367,
+          "edge_density": 0.18277389495336716,
+          "border_edge_frac": 0.19678997346292804
+        },
+        "failed_checks": []
+      },
+      "fields": {
+        "room": {
+          "value": "hallway",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "surface": {
+          "value": "wall",
+          "confidence": 0.9,
+          "source": "voice"
+        },
+        "damage_type": {
+          "value": "none",
+          "confidence": 0.95,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "The image shows the back of a computer monitor and cables with no visible damage to the wall surface.",
+          "signals": {
+            "model": 0.95,
+            "quality": 1.0
+          }
+        },
+        "size_cm": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "raw_text": "reference: none"
+        }
+      },
+      "timing": {
+        "cmd": 1795768141168,
+        "shot": 1795768141480,
+        "saved": 1795768141486,
+        "upload_start": 1795768141542,
+        "received": 1795768141727,
+        "extract_start": 1795768141728,
+        "extract_done": 1795768150674,
+        "stored": 1795768150674
+      }
+    }
+  ],
+  "notes": [
+    {
+      "note_id": "n1",
+      "taken_at": "2026-11-27T08:28:00.725Z",
+      "text": "subfloor soft by the cabinet",
+      "voice_command": "note subfloor soft by the cabinet",
+      "fields": {
+        "needs_review": {
+          "value": true,
+          "confidence": 1.0,
+          "source": "rule: spoken notes are error-prone in noise"
+        },
+        "location": {
+          "value": "by the cabinet",
+          "confidence": 0.76,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.95,
+            "asr": 0.8
+          }
+        },
+        "issue": {
+          "value": "soft_spot",
+          "confidence": 0.76,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.95,
+            "asr": 0.8
+          }
+        },
+        "material": {
+          "value": "subfloor",
+          "confidence": 0.76,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.95,
+            "asr": 0.8
+          }
+        },
+        "severity": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "asr": 0.8
+          }
+        },
+        "action": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "asr": 0.8
+          }
+        }
+      }
+    },
+    {
+      "note_id": "n2",
+      "taken_at": "2026-11-27T08:28:46.073Z",
+      "text": "water heater leaking at the base",
+      "voice_command": "note water heater leaking at the base",
+      "fields": {
+        "needs_review": {
+          "value": true,
+          "confidence": 1.0,
+          "source": "rule: spoken notes are error-prone in noise"
+        },
+        "location": {
+          "value": "water heater base",
+          "confidence": 0.76,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.95,
+            "asr": 0.8
+          }
+        },
+        "issue": {
+          "value": "leak",
+          "confidence": 0.8,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 1.0,
+            "asr": 0.8
+          }
+        },
+        "material": {
+          "value": "appliance",
+          "confidence": 0.72,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.9,
+            "asr": 0.8
+          }
+        },
+        "severity": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "asr": 0.8
+          }
+        },
+        "action": {
+          "value": null,
+          "confidence": 0.0,
+          "source": "vlm:gemini-3.1-flash-lite",
+          "signals": {
+            "model": 0.0,
+            "asr": 0.8
+          }
+        }
+      }
+    }
+  ],
+  "line_items": [
+    {
+      "code": "SUBF-RR",
+      "description": "Remove and replace subfloor",
+      "unit": "sq ft",
+      "qty": 10.0,
+      "qty_basis": "default",
+      "room": "by the cabinet",
+      "source_ids": [
+        "n1"
+      ],
+      "confidence": 0.5,
+      "status": "needs_review",
+      "reason": "from a spoken note, check the note text"
+    },
+    {
+      "code": "CAB-DR",
+      "description": "Detach and reset cabinet",
+      "unit": "each",
+      "qty": 1,
+      "qty_basis": "default",
+      "room": "by the cabinet",
+      "source_ids": [
+        "n1"
+      ],
+      "confidence": 0.5,
+      "status": "needs_review",
+      "reason": "from a spoken note, check the note text"
+    },
+    {
+      "code": "DRY-EQ",
+      "description": "Dehumidifier + air mover, per day",
+      "unit": "day",
+      "qty": 3,
+      "qty_basis": "default",
+      "room": null,
+      "source_ids": [
+        "n1"
+      ],
+      "confidence": 0.5,
+      "status": "needs_review",
+      "reason": "from a spoken note, check the note text"
+    }
+  ],
+  "summary": {
+    "captures": 6,
+    "notes": 2,
+    "low_quality": 0,
+    "needs_review": 3,
+    "upload_delay_s_max": 13.6
+  }
+}

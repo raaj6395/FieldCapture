@@ -84,13 +84,14 @@ Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quali
 - **Nameplate:** two independent readers. ML Kit text recognition runs on the phone (median 71 ms, free, offline) and a rule parser pulls make/model/serial/date; Gemini 3.1 Flash-Lite reads the same photo on the backend. Field confidence = reader confidence x photo quality x format check, then **agreement**: both readers agree -> 1-(1-a)(1-b); only one has a value -> x0.7; they disagree -> x0.4. Gemini's own confidence alone stays ~0.8 even when wrong; agreement is what brings wrong answers down.
 - **Damage:** room and surface come from the spoken command (0.9); Gemini gives damage type (8 classes) and a rough size, with size confidence capped at 0.5 without a reference object and 0.8 with one.
 - **Note:** Gemini turns the text into location / issue / material / severity, discounted for ASR errors.
+- Extraction runs after the upload returns (the phone's request takes ~2 ms on the server); finalize waits for pending extractions and answers 503 so the phone retries if one is still running. Measured on real walks: voice command -> capture has its extracted fields, 2.9 s median / 3.3 s p90; cost per job $0.0048 baseline, $0.0024 with the `lean` profile (`eval/REPORT.md`, Stretch D).
 - Model choice: bake-off on 5 plates - 3.1 Flash-Lite 11 correct / 2 wrong, 2.5 Flash 10/3, 3.5 Flash too slow (11-36 s, timeouts). Cost per job ~ **$0.006** at paid-tier prices (2 nameplates, 5 damage, 3 notes); we ran on the free tier ($0 billed; free-tier requests may be used by Google to improve its models). Every call is logged with tokens and latency; a local guard caps calls per day under the free-tier quota.
 
 ## Job record, line items, offline
 
 - Schema: `backend/schema/job_record.schema.json` (JSON Schema 2020-12, validated on every finalize). Catalog: `backend/line_items.json` (13 codes, e.g. DRY-RR drywall remove and replace per sq ft, PNT-CLG, SUBF-RR, DRY-EQ drying equipment per day, WH-RPL water heater replace). Rules in `backend/mapping.py`; every line item carries its quantity basis (measured / estimated / default), source capture ids and a status (draft / needs_review / suggested). Low confidence or low photo quality -> needs_review.
 - Offline: every capture is written to disk (photo + `session.json`) before the spoken reply. A WorkManager job with a network constraint uploads when signal returns; captures carry stable ids and the backend stores each id once, so a crash between upload and "uploaded" mark cannot duplicate. A job finalized before all captures arrive is `partial` with the missing ids listed, and becomes `complete` when they land. Drill on the phone: airplane mode, 3 captures + 2 notes, force-stop, reopen, 1 more capture, end job, network on -> all 6 items uploaded **6 s** later, 0 lost, 0 duplicates; replaying every upload changed nothing.
-- Sample records: `jobs/83790B46.json` (the offline drill). Three final samples go in `samples/` (see Known limitations).
+- Sample records: `samples/job_1.json` - `job_3.json`, three real walk-throughs (one fully offline then synced), all schema-valid; see `samples/README.md`. `jobs/83790B46.json` is the offline drill.
 
 ## Results (development set)
 
@@ -116,8 +117,8 @@ Full report: `eval/REPORT.md`. **These numbers come from openly licensed web pho
 - Not run on real glasses. On the mock: injected speech stops working after a reconnect in 11/13 tries (live mic is unaffected); the mock gives 640x480 stills; ASR final confidence is always 0.0, so we do not gate on it.
 - Size from a single photo is a model estimate (stretch A not done). Notes in noise garble.
 - Fresh clone following this README on the dev Mac: backend installed, 26 tests passing and the APK built in 32 s, but with warm pip and Gradle caches; a cold machine also downloads Gradle and the dependencies (not timed).
-- Demo video, three final sample walk-throughs and the stage-latency table for a real walk (`tools/cost_latency.py`) still need a recording session with the final build.
-- Backend has no auth and runs extraction inside the upload request.
+- Demo video still to be recorded from the tagged build. The sample walks were run with the phone on a desk, so their photos show a monitor and a desk, not appliances or damage.
+- Backend has no auth. Gemini calls are serialized and spaced 13 s apart to stay inside the free tier, so a burst of offline captures takes ~13 s per item to extract after sync.
 
 ## What we cut and why
 
@@ -131,7 +132,7 @@ Full report: `eval/REPORT.md`. **These numbers come from openly licensed web pho
 1. Shoot and label the 40+ own-frame test set from real jobs, then retune thresholds on glasses frames and drop `provisional`.
 2. Damage: multi-label output with top-2 probabilities (margin as confidence), and a reference-object size estimate.
 3. Cut-off check from the detected plate rectangle; crop the plate before the model call (fewer tokens, better OCR).
-4. Move extraction off the upload request; incremental finalize.
+4. Paid-tier quota without the 13 s spacing; parallel extraction for offline bursts.
 5. Week-one field test with five techs (usable-frame rate, retakes per job, voice error rate, disconnects per hour, battery per hour, back-office edits per record).
 
 ## AI tools used
