@@ -124,9 +124,9 @@ Mean confidence: correct 0.64, wrong 0.41.
 |---|---|---|
 | gemini-2.5-flash | 200 | 5 |
 | gemini-3.1-flash-lite | timeout | 2 |
-| gemini-3.1-flash-lite | 200 | 67 |
-| gemini-3.1-flash-lite | 503 | 12 |
+| gemini-3.1-flash-lite | 200 | 69 |
+| gemini-3.1-flash-lite | 503 | 13 |
 | gemini-3.5-flash | timeout | 2 |
 | gemini-3.5-flash | 200 | 3 |
 
-Successful calls 75, input tokens 84126, output tokens 12780, thinking tokens 7778. All on the AI Studio free tier: $0 billed (free-tier requests may be used by Google to improve its models).
+Successful calls 77, input tokens 85166, output tokens 13157, thinking tokens 7778. All on the AI Studio free tier: $0 billed (free-tier requests may be used by Google to improve its models).

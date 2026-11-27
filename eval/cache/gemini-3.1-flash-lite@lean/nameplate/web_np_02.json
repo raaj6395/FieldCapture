@@ -1,0 +1,22 @@
+{
+ "make": {
+  "value": "MALMBERGS",
+  "confidence": 1
+ },
+ "model": {
+  "value": "MS 711-2",
+  "confidence": 1
+ },
+ "serial": {
+  "value": "1212073091",
+  "confidence": 1
+ },
+ "mfg_date": {
+  "value": null,
+  "confidence": 0
+ },
+ "appliance": {
+  "value": "other",
+  "confidence": 0.9
+ }
+}

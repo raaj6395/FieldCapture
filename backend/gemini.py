@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import os
 import time
 from datetime import datetime
 from pathlib import Path
@@ -45,8 +46,21 @@ def cap(model):
     return DAILY_CAP.get(model, DEFAULT_CAP)
 
 
+def profile():
+    return os.environ.get("FC_PROFILE", "baseline")
+
+
 def thinking(model):
-    return {"thinkingBudget": 0} if model.startswith("gemini-2.5") else {"thinkingLevel": "low"}
+    if model.startswith("gemini-2.5"):
+        return {"thinkingBudget": 0}
+    return {"thinkingLevel": "minimal" if profile() == "lean" else "low"}
+
+
+def gen_config(model, schema):
+    cfg = {"temperature": 0, "responseMimeType": "application/json", "responseSchema": schema, "thinkingConfig": thinking(model)}
+    if profile() == "lean":
+        cfg["mediaResolution"] = "MEDIA_RESOLUTION_LOW"
+    return cfg
 
 
 def used_today(model, now=None):
@@ -83,9 +97,7 @@ def generate(prompt, schema, image=None, purpose="", models=MODELS):
         data, size = jpeg(image)
         parts.append({"inline_data": {"mime_type": "image/jpeg", "data": base64.b64encode(data).decode()}})
     for model in [m for m in models for _ in range(2)]:
-        body = {"contents": [{"parts": parts}],
-                "generationConfig": {"temperature": 0, "responseMimeType": "application/json", "responseSchema": schema,
-                                     "thinkingConfig": thinking(model)}}
+        body = {"contents": [{"parts": parts}], "generationConfig": gen_config(model, schema)}
         if used_today(model) >= cap(model):
             raise QuotaGuard(f"{model}: {cap(model)} calls already made today (Pacific), local cap")
         wait_gap()
@@ -96,7 +108,7 @@ def generate(prompt, schema, image=None, purpose="", models=MODELS):
             log({"ts": t, "model": model, "purpose": purpose, "status": "timeout", "ms": round((time.time() - t) * 1000), "image_px": size})
             raise
         u = r.json().get("usageMetadata", {}) if r.headers.get("content-type", "").startswith("application/json") else {}
-        log({"ts": t, "model": model, "purpose": purpose, "status": r.status_code, "ms": round((time.time() - t) * 1000),
+        log({"ts": t, "model": model, "profile": profile(), "purpose": purpose, "status": r.status_code, "ms": round((time.time() - t) * 1000),
              "image_px": size, "in_tokens": u.get("promptTokenCount"), "out_tokens": u.get("candidatesTokenCount"),
              "thought_tokens": u.get("thoughtsTokenCount")})
         if r.status_code == 429:

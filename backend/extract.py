@@ -28,6 +28,7 @@ def obj(props):
 TEXT_FIELD = {"type": "object", "properties": {"value": {"type": "string", "nullable": True}, "confidence": {"type": "number"},
                                                "raw_text": {"type": "string", "nullable": True}}, "required": ["value", "confidence", "raw_text"]}
 NAMEPLATE_SCHEMA = obj({k: TEXT_FIELD for k in nameplate.FIELDS})
+NAMEPLATE_SCHEMA_LEAN = obj({k: vfield() for k in nameplate.FIELDS})
 DAMAGE_SCHEMA = obj({
     "damage_type": vfield(enum=DAMAGE_TYPES),
     "size": obj({"width_cm": {"type": "number", "nullable": True}, "height_cm": {"type": "number", "nullable": True},
@@ -50,7 +51,9 @@ def nameplate_fields(photo, ocr, quality, vlm=gemini.generate, use_vlm=True):
     ml = nameplate.extract(ocr, quality)
     if not use_vlm:
         return ml, None
-    resp, model = vlm(PROMPT["nameplate"], NAMEPLATE_SCHEMA, photo, purpose=f"nameplate:{Path(photo).name}")
+    lean = gemini.profile() == "lean"
+    prompt = "\n".join(l for l in PROMPT["nameplate"].splitlines() if not l.startswith("- raw_text")) if lean else PROMPT["nameplate"]
+    resp, model = vlm(prompt, NAMEPLATE_SCHEMA_LEAN if lean else NAMEPLATE_SCHEMA, photo, purpose=f"nameplate:{Path(photo).name}")
     return nameplate.combine(ml, nameplate.from_gemini(resp, quality, model)), {"model": model, "response": resp}
 
 

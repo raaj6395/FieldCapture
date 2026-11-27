@@ -25,7 +25,7 @@ class Missing(Exception):
 
 
 def cached(kind, stem, run, counter):
-    path = OUT / "cache" / MODEL / kind / f"{stem}.json"
+    path = OUT / "cache" / (MODEL if gemini.profile() == "baseline" else f"{MODEL}@{gemini.profile()}") / kind / f"{stem}.json"
 
     def vlm(prompt, schema, image, purpose=""):
         if path.exists():
@@ -91,6 +91,10 @@ def run(args):
     for file, parent, variant, lab in frames():
         if args.split and lab["split"] != args.split or args.variants and variant not in args.variants.split(","):
             continue
+        if args.types and lab["type"] not in args.types.split(","):
+            continue
+        if args.limit and len(planned) >= args.limit:
+            break
         img = (WEB / "img" / file) if variant == "orig" else (WEB / "synth" / file)
         kind = lab["type"]
         s = quality.score(img, t)
@@ -135,7 +139,7 @@ def run(args):
         except Exception as e:
             print(f"skipped {file}: {e}")
             missing += 1
-    for n in csv.DictReader(open(ROOT / "data/notes.csv")):
+    for n in csv.DictReader(open(ROOT / "data/notes.csv")) if not args.types or "note" in args.types.split(",") else []:
         vlm = cached("note", n["id"], args.run, planned)
         try:
             fields, _ = extract.note_fields(n["text"], vlm=vlm)
@@ -158,6 +162,8 @@ def main():
     ap.add_argument("--run", action="store_true", help="call the API for frames not in the cache")
     ap.add_argument("--split", default="", help="only frames of this split (notes are always eval)")
     ap.add_argument("--variants", default="", help="comma list, e.g. orig,dark")
+    ap.add_argument("--types", default="", help="comma list of nameplate,damage,note")
+    ap.add_argument("--limit", type=int, default=0, help="stop after this many uncached calls")
     args = ap.parse_args()
     rows, planned, missing = run(args)
     if not args.run:
