@@ -3,6 +3,7 @@
   "edge_e": 20,
   "dark_mean": 44.9688,
   "dark_frac": 1.0,
+  "motion_ratio": 0.24,
   "nameplate": {
     "blur": 70.6603,
     "glare_frac": 0.3238,

@@ -35,6 +35,8 @@ def scores(y, edge_e):
     bw, bh = int(0.08 * w), int(0.08 * h)
     yy, xx = np.mgrid[1:h - 1, 1:w - 1]
     band = (xx < bw) | (xx >= w - bw) | (yy < bh) | (yy >= h - bh)
+    vx = (y[:, :-2] + y[:, 2:] - 2 * y[:, 1:-1]).var()
+    vy = (y[:-2, :] + y[2:, :] - 2 * y[1:-1, :]).var()
     centre = y[int(0.2 * h):int(0.8 * h), int(0.2 * w):int(0.8 * w)]
     return {
         "blur": float(lap.var()),
@@ -43,6 +45,7 @@ def scores(y, edge_e):
         "glare_frac": float((centre > 250).mean()),
         "edge_density": float(edges.mean()),
         "border_edge_frac": float(edges[band].sum() / max(edges.sum(), 1)),
+        "motion_ratio": float(min(vx, vy) / max(vx, vy)) if max(vx, vy) > 0 else 1.0,
     }
 
 
@@ -63,7 +66,7 @@ def verdict(s, kind, t=None, ocr=None):
     reasons = []
     if s["brightness"] < t["dark_mean"] or s["dark_frac"] > t["dark_frac"]:
         reasons.append("dark")
-    if s["blur"] < k["blur"]:
+    if s["blur"] < k["blur"] or ("motion_ratio" in t and s.get("motion_ratio", 1.0) < t["motion_ratio"]):
         reasons.append("blurry")
     if k.get("glare_frac") is not None and s["glare_frac"] > k["glare_frac"]:
         reasons.append("glare")

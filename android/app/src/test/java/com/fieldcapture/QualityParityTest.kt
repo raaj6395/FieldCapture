@@ -65,4 +65,21 @@ class QualityParityTest {
     assertEquals(1, Quality.textAtEdge(listOf(inside, atRight), 640, 480, 0.03))
     assertEquals(1, Quality.textAtEdge(listOf("WATER HEATER" to intArrayOf(80, 2, 400, 40)), 640, 480, 0.03))
   }
+
+  @Test
+  fun sidewaysMotionBlurIsBlurryEvenWithStrongEdges() {
+    val w = 360
+    val h = 480
+    val rnd = java.util.Random(7)
+    val noise = IntArray(w * h) { if (rnd.nextBoolean()) 230 else 20 }
+    fun rgb(g: IntArray) = IntArray(g.size) { (g[it] shl 16) or (g[it] shl 8) or g[it] }
+    val smeared = IntArray(w * h) { i -> val r = i / w; val c = i % w; (0 until 15).sumOf { noise[r * w + minOf(w - 1, c + it)] } / 15 }
+    val tm = t.copy(motionRatio = 0.24)
+    val sharp = Quality.score(rgb(noise), w, h, tm)
+    val moved = Quality.score(rgb(smeared), w, h, tm)
+    assertTrue("sharp ratio ${sharp.motionRatio}", sharp.motionRatio > 0.8)
+    assertTrue("moved ratio ${moved.motionRatio} blur ${moved.blur}", moved.motionRatio < 0.24 && moved.blur > 60.0)
+    assertEquals(emptyList<String>(), Quality.verdict(sharp, "nameplate", tm))
+    assertEquals(listOf("blurry"), Quality.verdict(moved, "nameplate", tm))
+  }
 }

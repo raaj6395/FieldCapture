@@ -576,8 +576,8 @@ class JobSession(private val app: Application) {
           for (burst in 0..SILENT_EXTRA_SHOTS) {
             val a = shoot(st, shot.kind) ?: break
             attempts++
-            log("attempt $attempts ${a.reasons.ifEmpty { listOf("ok") }} blur=%.1f bright=%.1f dark=%.3f glare=%.3f edges=%.4f border=%.3f".format(
-                a.scores.blur, a.scores.brightness, a.scores.darkFrac, a.scores.glareFrac, a.scores.edgeDensity, a.scores.borderEdgeFrac))
+            log("attempt $attempts ${a.reasons.ifEmpty { listOf("ok") }} blur=%.1f bright=%.1f dark=%.3f glare=%.3f edges=%.4f border=%.3f motion=%.3f".format(
+                a.scores.blur, a.scores.brightness, a.scores.darkFrac, a.scores.glareFrac, a.scores.edgeDensity, a.scores.borderEdgeFrac, a.scores.motionRatio))
             if (best == null || better(a, best)) best = a
             if (a.reasons != listOf("blurry")) break
           }
@@ -673,6 +673,7 @@ class JobSession(private val app: Application) {
           KindThresholds(j.getDouble("blur"), j.dbl("glare_frac"), j.dbl("empty_edge_density"), j.dbl("border_edge_frac"), j.dbl("text_edge_margin"))
         },
         provisional = o.optBoolean("provisional"),
+        motionRatio = o.dbl("motion_ratio"),
     ).also { log("quality thresholds loaded${if (it.provisional) " (PROVISIONAL)" else ""}") }
   }
 
@@ -744,7 +745,7 @@ class JobSession(private val app: Application) {
           .put("quality_flag", c.qualityFlag).put("quality_reasons", JSONArray(c.qualityReasons)).put("attempts", c.attempts)
           .put("timing", JSONObject(c.timing as Map<*, *>))
           .put("quality", c.quality?.let { q -> JSONObject().put("blur", q.blur).put("brightness", q.brightness).put("dark_frac", q.darkFrac)
-              .put("glare_frac", q.glareFrac).put("edge_density", q.edgeDensity).put("border_edge_frac", q.borderEdgeFrac) })
+              .put("glare_frac", q.glareFrac).put("edge_density", q.edgeDensity).put("border_edge_frac", q.borderEdgeFrac).put("motion_ratio", q.motionRatio) })
     }))
     put("notes", JSONArray(job.notes.map { n ->
       JSONObject().put("id", n.id).put("at", n.at).put("text", n.text).put("transcript", n.transcript)
@@ -777,7 +778,7 @@ class JobSession(private val app: Application) {
       Capture(it.getString("id"), it.getString("kind"), it.getLong("at"), it.getString("file"), it.str("room"), it.str("surface"),
           it.str("unrecognised"), it.str("transcript"), it.flt("asr_confidence"), it.str("retake_of"),
           it.optJSONObject("quality")?.let { q -> QualityScores(q.getDouble("blur"), q.getDouble("brightness"), q.getDouble("dark_frac"),
-              q.getDouble("glare_frac"), q.getDouble("edge_density"), q.getDouble("border_edge_frac")) },
+              q.getDouble("glare_frac"), q.getDouble("edge_density"), q.getDouble("border_edge_frac"), q.optDouble("motion_ratio", 1.0)) },
           it.optJSONArray("quality_reasons")?.let { r -> (0 until r.length()).map(r::getString) } ?: emptyList(),
           it.optInt("attempts", 1), it.optString("quality_flag", "unchecked"),
           it.optJSONObject("timing")?.let { t -> t.keys().asSequence().associateWith { k -> t.getLong(k) } } ?: emptyMap())

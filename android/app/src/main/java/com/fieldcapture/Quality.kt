@@ -10,6 +10,7 @@ data class QualityScores(
     val glareFrac: Double,
     val edgeDensity: Double,
     val borderEdgeFrac: Double,
+    val motionRatio: Double = 1.0,
 )
 
 data class KindThresholds(val blur: Double, val glareFrac: Double? = null, val emptyEdgeDensity: Double? = null, val borderEdgeFrac: Double? = null, val textEdgeMargin: Double? = null)
@@ -20,6 +21,7 @@ data class Thresholds(
     val darkFrac: Double,
     val kinds: Map<String, KindThresholds>,
     val provisional: Boolean,
+    val motionRatio: Double? = null,
 )
 
 object Quality {
@@ -74,6 +76,24 @@ object Quality {
         if (c < bw || c >= w - bw || r < bh || r >= h - bh) borderEdges++
       }
     }
+    var gx = 0.0
+    var gx2 = 0.0
+    var gy = 0.0
+    var gy2 = 0.0
+    for (r in 0 until h) for (c in 1 until w - 1) {
+      val d = y[r * w + c - 1] + y[r * w + c + 1] - 2 * y[r * w + c]
+      gx += d
+      gx2 += d * d
+    }
+    for (r in 1 until h - 1) for (c in 0 until w) {
+      val d = y[(r - 1) * w + c] + y[(r + 1) * w + c] - 2 * y[r * w + c]
+      gy += d
+      gy2 += d * d
+    }
+    val nx = h * (w - 2).toDouble()
+    val ny = (h - 2) * w.toDouble()
+    val vx = gx2 / nx - (gx / nx) * (gx / nx)
+    val vy = gy2 / ny - (gy / ny) * (gy / ny)
     var glare = 0
     val r0 = (0.2 * h).toInt()
     val r1 = (0.8 * h).toInt()
@@ -87,6 +107,7 @@ object Quality {
         glareFrac = glare.toDouble() / ((r1 - r0) * (c1 - c0)),
         edgeDensity = edges.toDouble() / n,
         borderEdgeFrac = borderEdges.toDouble() / maxOf(edges, 1),
+        motionRatio = if (maxOf(vx, vy) > 0) minOf(vx, vy) / maxOf(vx, vy) else 1.0,
     )
   }
 
@@ -99,7 +120,7 @@ object Quality {
     val k = t.kinds.getValue(kind)
     return buildList {
       if (s.brightness < t.darkMean || s.darkFrac > t.darkFrac) add("dark")
-      if (s.blur < k.blur) add("blurry")
+      if (s.blur < k.blur || (t.motionRatio != null && s.motionRatio < t.motionRatio)) add("blurry")
       if (k.glareFrac != null && s.glareFrac > k.glareFrac) add("glare")
       if (k.emptyEdgeDensity != null && s.edgeDensity < k.emptyEdgeDensity) add("empty")
       if (k.borderEdgeFrac != null && s.borderEdgeFrac > k.borderEdgeFrac) add("cut_off")
