@@ -282,16 +282,5 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
         }
       }
     }
-    if (lines.isNotEmpty()) {
-      item { SectionLabel("Full estimate") }
-      item {
-        Column(Modifier.padding(bottom = 32.dp).clip(Fc.rCard).background(Fc.card).border(1.dp, Fc.hairline, Fc.rCard)) {
-          lines.forEachIndexed { i, li ->
-            if (i > 0) Box(Modifier.padding(start = 16.dp)) { Hairline() }
-            LineRow(li, Modifier.padding(16.dp), sources(li).joinToString().let { "from $it" })
-          }
-        }
-      }
-    }
   }
 }
