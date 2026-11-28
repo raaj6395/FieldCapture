@@ -119,6 +119,7 @@ Full report: `eval/REPORT.md`. **These numbers come from openly licensed web pho
 - **Test set is not our own captures yet.** The rules require it; the eval pipeline is ready, the frames are not shot. Reported numbers are a development set.
 - **Cut-off is only checked for nameplates**, from OCR text touching the edge. A plate with no readable text, or a damage photo, is never flagged as cut off. Cut-off copies in the test data are synthetic crops.
 - **Damage-type confidence is not calibrated** (see Results). Damage line items should be reviewed until a second signal exists.
+- App registration (`startRegistration`, `registrationState`, error stream, `handleIntent` for the `fieldcapture://` return, unregister) is exercised on the mock only, which completes it without the Meta AI consent screen or a deep-link round trip; see `docs/SDK_NOTES.md`.
 - Not run on real glasses. On the mock: voice commands stop reaching the app after a glasses reconnect (injected speech 11/13 tries, live mic too) until the app restarts; the mock's phone recognizer beeps every ~5 s, so notification sounds are muted while a job is open; the mock gives 640x480 stills; ASR final confidence is always 0.0, so we do not gate on it.
 - Size from a single photo is a model estimate (stretch A not done). Notes in noise garble.
 - Fresh clone following this README on the dev Mac: backend installed, 26 tests passing and the APK built in 32 s, but with warm pip and Gradle caches; a cold machine also downloads Gradle and the dependencies (not timed).

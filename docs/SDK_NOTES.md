@@ -5,7 +5,7 @@ Device: Samsung Galaxy S22 (SM-S901E), Android 16 / API 36. DAT 1.1.0, Meta Came
 ## 2026-11-26 - first run of CameraAccess on the mock
 
 - Built with command-line tools only (no Android Studio): `./gradlew assembleDebug`, 4m11s cold on an 8 GB M1, APK 96 MB (many bundled native libs).
-- **Meta AI app is NOT needed for the mock.** Enabling MockDeviceKit skipped the "Connect my glasses" / Meta AI redirect and the app went straight to "Ready" (registered).
+- **Meta AI app is NOT needed for the mock.** Enabling MockDeviceKit skipped the "Connect my glasses" / Meta AI redirect and the app went straight to "Ready" (registered). That is because `MockDeviceKit.enable()` defaults to `MockDeviceKitConfig(initiallyRegistered = true)`; the docs say so only in the config reference. FieldCapture now enables the kit with `initiallyRegistered = false` (true only after the user has registered once, kept in prefs the way Meta AI keeps it), so the real flow runs on the mock.
 - Mock setup order in the debug panel: Enable MockDeviceKit -> Pair Ray-Ban Meta -> Power, Donned, Unfolded toggles -> Camera source (Front / Back camera / Video file) -> Select image (for photo capture).
 - A newly paired mock is powered off, folded and not worn; session will not start until all three are on.
 - Back camera as feed: session `started`, stream `streaming` within ~5 s of tapping Preview. In-stream photo capture worked.
@@ -161,3 +161,10 @@ Still needed: real frames from glasses (or the mock camera) for blur and glare, 
 Side result: on first launch (before network was off) the worker flushed 3 older stopped jobs that were still queued from earlier sessions (A963C600, 5F08C2E2, 005D1978), all finalized.
 
 Damage captures map to INSP-REV (needs_review) because there is no extraction yet; Phase 5 fills damage_type/size.
+
+## 2026-11-28 - App registration with Meta AI (measured on the mock)
+
+- Flow in the app: "Connect to Meta AI" card -> `Wearables.startRegistration(activity)`; `Wearables.registrationState` drives the UI; `Wearables.registrationErrorStream` gives the reason on failure; `Wearables.handleIntent(intent)` in `onCreate` / `onNewIntent` handles the `fieldcapture://` return from Meta AI; `startUnregistration` in Developer tools. Start job is blocked with "Connect FieldCapture to Meta AI first." until REGISTERED.
+- Observed states on the mock: success UNAVAILABLE -> REGISTERING -> REGISTERED in the same frame (no Meta AI round trip); failure (`setRegistrationResult(false)`, Developer tools "Next registration fails") REGISTERING -> UNAVAILABLE plus `FAILED_TO_REGISTER` on the error stream; unregister REGISTERED -> UNREGISTERING -> UNAVAILABLE.
+- **Unregistered hides the glasses**: `AutoDeviceSelector.activeDeviceFlow()` emits null while unregistered and the device id 0.2-1.4 s after REGISTERED. So an unregistered app looks exactly like "glasses off" unless the UI checks registration first (ours now says "Not connected to Meta AI").
+- What the mock cannot show: the real Meta AI consent screen, the deep-link return (`handleIntent` is wired but never receives a real callback on the mock), `META_AI_NOT_INSTALLED` / `UNAUTHORIZED`, and Developer Mode with application id 0 against a real Meta AI app. Those are the first things to test on real hardware.

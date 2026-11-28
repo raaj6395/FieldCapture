@@ -48,6 +48,7 @@ import androidx.lifecycle.lifecycleScope
 import com.meta.wearable.dat.core.Wearables
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import com.meta.wearable.dat.core.types.RegistrationState
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -79,14 +80,27 @@ class MainActivity : ComponentActivity() {
     }
   }
 
+  private fun handle(intent: android.content.Intent?) {
+    intent?.data ?: return
+    Wearables.handleIntent(intent) { js.log("registration request: $it") }
+        .onSuccess { js.log("registration callback handled: $it") }
+        .onFailure { e, _ -> js.log("registration callback FAILED: ${e.description}") }
+  }
+
+  override fun onNewIntent(intent: android.content.Intent) {
+    super.onNewIntent(intent)
+    handle(intent)
+  }
+
   override fun onCreate(savedInstanceState: Bundle?) {
+    handle(intent)
     enableEdgeToEdge(SystemBarStyle.dark(Fc.bg.hashCode()), SystemBarStyle.dark(Fc.bg.hashCode()))
     super.onCreate(savedInstanceState)
     setContent {
       FieldTheme {
         Box(Modifier.fillMaxSize().background(Fc.bg)) {
           var review by rememberSaveable { mutableStateOf<String?>(null) }
-          review?.let { id -> BackHandler { review = null }; ReviewScreen(id) { review = null } } ?: JobScreen(js, { startJob() }) { review = it }
+          review?.let { id -> BackHandler { review = null }; ReviewScreen(id) { review = null } } ?: JobScreen(js, { startJob() }, { js.register(this@MainActivity) }, { js.unregister(this@MainActivity) }) { review = it }
         }
       }
     }
@@ -138,7 +152,7 @@ private fun SmallAction(text: String, onClick: () -> Unit) =
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit) {
+fun JobScreen(js: JobSession, startJob: () -> Unit, register: () -> Unit, unregister: () -> Unit, openReview: (String) -> Unit) {
   val state by js.state.collectAsStateWithLifecycle()
   val rev by js.rev.collectAsStateWithLifecycle()
   val listening by js.listening.collectAsStateWithLifecycle()
@@ -146,11 +160,14 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
   val queue by js.queue.collectAsStateWithLifecycle()
   val lines by js.lines.collectAsStateWithLifecycle()
   val glassesInfo by js.glassesInfo.collectAsStateWithLifecycle()
+  val reg by js.registration.collectAsStateWithLifecycle()
+  val regError by js.registrationError.collectAsStateWithLifecycle()
+  val registered = reg == RegistrationState.REGISTERED
   val ctx = LocalContext.current
-  val blocked = remember(glassesInfo) { js.glassesProblem() }
+  val blocked = remember(glassesInfo, reg) { js.glassesProblem() }
   val tryStart = {
     if (blocked == null) startJob()
-    else android.widget.Toast.makeText(ctx, if (glassesInfo == null) "Glasses not connected" else blocked, android.widget.Toast.LENGTH_SHORT).show()
+    else android.widget.Toast.makeText(ctx, if (registered && glassesInfo == null) "Glasses not connected" else blocked, android.widget.Toast.LENGTH_SHORT).show()
   }
   val job = js.job
   val past = remember(rev, state) { jobSummaries(ctx).filter { it.id != job.id || state == JobState.STOPPED }.take(5) }
@@ -163,6 +180,17 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
         Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
           StatusChip(Lucide.glasses, if (glasses) "Glasses connected" else "Glasses not connected", glasses)
           StatusChip(if (listening) Lucide.mic else Lucide.micOff, if (listening) "Listening" else "Mic off", listening)
+        }
+      }
+    }
+    if (!registered && !job.open) item {
+      Card(Modifier.padding(bottom = 12.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+          Text("Connect to Meta AI", style = Fc.heading)
+          Text("FieldCapture uses your glasses through the Meta AI app. Connect once and the phone remembers it.", style = Fc.label)
+          regError?.let { Text(it, style = Fc.label.copy(color = Fc.amber)) }
+          if (reg == RegistrationState.REGISTERING) Text("Waiting for Meta AI…", style = Fc.body.copy(color = Fc.text2))
+          else PrimaryButton("Connect to Meta AI", register, Modifier.fillMaxWidth())
         }
       }
     }
@@ -248,6 +276,13 @@ fun JobScreen(js: JobSession, startJob: () -> Unit, openReview: (String) -> Unit
       if (dev) {
         item {
           Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text("Meta AI registration: ${reg.name.lowercase()}", style = Fc.meta)
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+              if (registered) SmallAction("Disconnect from Meta AI", unregister)
+              SmallAction("Next registration fails") { js.mock("regfail") }
+              SmallAction("Next registration works") { js.mock("regok") }
+            }
+            Spacer(Modifier.size(8.dp))
             Text("Glasses simulator", style = Fc.meta)
             GlassesSimulator(js, state)
             Spacer(Modifier.size(8.dp))

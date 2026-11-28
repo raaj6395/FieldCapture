@@ -31,6 +31,7 @@ import com.meta.wearable.dat.core.types.DonState
 import com.meta.wearable.dat.core.types.HingeState
 import com.meta.wearable.dat.core.types.Permission
 import com.meta.wearable.dat.core.types.PermissionStatus
+import com.meta.wearable.dat.core.types.RegistrationState
 import com.meta.wearable.dat.core.types.ThermalLevel
 import com.meta.wearable.dat.inputs.Inputs
 import com.meta.wearable.dat.inputs.addInputs
@@ -41,6 +42,7 @@ import com.meta.wearable.dat.inputs.types.InputsConfiguration
 import com.meta.wearable.dat.inputs.types.InputsState
 import com.meta.wearable.dat.mockdevice.MockDeviceKit
 import com.meta.wearable.dat.mockdevice.api.GlassesModel
+import com.meta.wearable.dat.mockdevice.api.MockDeviceKitConfig
 import com.meta.wearable.dat.mockdevice.api.MockGlasses
 import com.meta.wearable.dat.mockdevice.api.camera.CameraFacing
 import com.meta.wearable.dat.mockdevice.api.speech.MockSpeechSource
@@ -102,6 +104,8 @@ class JobSession(private val app: Application) {
   private var lastFrameAt = 0L
   private var frames = 0L
   val deviceReady = MutableStateFlow(false)
+  val registration = MutableStateFlow(RegistrationState.UNAVAILABLE)
+  val registrationError = MutableStateFlow<String?>(null)
   private var device: Device? = null
   private var hot = false
   private var batteryWarned = false
@@ -139,6 +143,24 @@ class JobSession(private val app: Application) {
           }
         }
       }, IntentFilter("com.fieldcapture.CMD"), Context.RECEIVER_EXPORTED)
+    }
+    scope.launch {
+      Wearables.registrationState.collect { r ->
+        log("registration: $r")
+        if (r == RegistrationState.REGISTERED) registrationError.value = null
+        if (r == RegistrationState.REGISTERED || registration.value == RegistrationState.UNREGISTERING) prefs.edit().putBoolean("dat_registered", r == RegistrationState.REGISTERED).apply()
+        registration.value = r
+      }
+    }
+    scope.launch {
+      Wearables.registrationErrorStream.collect { e ->
+        log("registration FAILED: $e")
+        registrationError.value = when (e.name) {
+          "META_AI_NOT_INSTALLED" -> "Install the Meta AI app, then try again."
+          "UNAUTHORIZED" -> "Meta AI did not allow FieldCapture. Try again and tap Allow."
+          else -> "Couldn't connect to Meta AI. Check the internet and try again."
+        }
+      }
     }
     scope.launch {
       selector.activeDeviceFlow().collectLatest { id ->
@@ -187,7 +209,7 @@ class JobSession(private val app: Application) {
 
   private fun mockSetup() {
     val kit = MockDeviceKit.getInstance(app)
-    kit.enable()
+    kit.enable(MockDeviceKitConfig(initiallyRegistered = prefs.getBoolean("dat_registered", false)))
     kit.permissions.set(Permission.CAMERA, PermissionStatus.Granted)
     kit.permissions.set(Permission.MICROPHONE, PermissionStatus.Granted)
     kit.pairGlasses(GlassesModel.RAYBAN_META).fold(
@@ -204,9 +226,21 @@ class JobSession(private val app: Application) {
     )
   }
 
+  fun register(activity: android.app.Activity) {
+    registrationError.value = null
+    log("registration: starting")
+    Wearables.startRegistration(activity)
+  }
+
+  fun unregister(activity: android.app.Activity) {
+    log("registration: removing")
+    Wearables.startUnregistration(activity)
+  }
+
   fun glassesProblem(): String? {
     val g = glassesInfo.value
     return when {
+      registration.value != RegistrationState.REGISTERED -> "Connect FieldCapture to Meta AI first."
       g == null -> "Glasses are off. Turn them on first."
       !g.open -> "Glasses are folded. Open them first."
       !g.worn -> "Put the glasses on first."
@@ -709,6 +743,8 @@ class JobSession(private val app: Application) {
       "battery10" -> g.setBatteryLevel(10)
       "battery80" -> g.setBatteryLevel(80)
       "button" -> g.services.input.capture(CapturePressType.SHORT_PRESS)
+      "regfail" -> MockDeviceKit.getInstance(app).setRegistrationResult(false)
+      "regok" -> MockDeviceKit.getInstance(app).setRegistrationResult(true)
     }
   }
 

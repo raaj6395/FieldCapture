@@ -50,6 +50,8 @@ fun GlassesView(js: JobSession, state: JobState) {
   val info by js.glassesInfo.collectAsStateWithLifecycle()
   val caption by js.caption.collectAsStateWithLifecycle()
   val shutter by js.shutter.collectAsStateWithLifecycle()
+  val reg by js.registration.collectAsStateWithLifecycle()
+  val linked = reg == com.meta.wearable.dat.core.types.RegistrationState.REGISTERED
   val flash = remember { Animatable(0f) }
   LaunchedEffect(shutter) {
     if (shutter == 0) return@LaunchedEffect
@@ -73,6 +75,7 @@ fun GlassesView(js: JobSession, state: JobState) {
       if (!live) {
         Text(
             when {
+              !linked -> "Not connected to Meta AI"
               g == null -> "Glasses off"
               !g.open -> "Glasses folded"
               !g.worn -> "Glasses not on face"
@@ -102,7 +105,7 @@ fun GlassesView(js: JobSession, state: JobState) {
       Box(Modifier.fillMaxSize().alpha(flash.value).background(Color.White))
     }
     Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-      Fact("Power", if (g == null) "Off" else "On")
+      Fact("Power", if (!linked) "–" else if (g == null) "Off" else "On")
       Fact("Wearing", if (g == null) "–" else if (g.worn) "On face" else "Off face")
       Fact("Hinge", if (g == null) "–" else if (g.open) "Open" else "Folded")
       Fact("Heat", if (g == null) "–" else if (g.hot) "Hot" else "Normal", g?.hot == true)
