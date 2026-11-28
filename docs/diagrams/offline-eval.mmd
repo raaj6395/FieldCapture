@@ -1,0 +1,20 @@
+flowchart LR
+  web[Web photos + labels] --> synth[synth.py variants]
+  own[Own phone photos]
+  web --> qpy[tools/quality.py]
+  synth --> qpy
+  own --> qpy
+  qpy --> tune[tune_thresholds.py]
+  tune --> thr[(thresholds.json)]
+  thr --> app[Quality.kt in app]
+  qpy -. parity test .- app
+  web --> phocr[ML Kit OCR on phone]
+  phocr --> ocrj[(ocr_mlkit JSON)]
+  ocrj --> eval[tools/eval.py]
+  synth --> eval
+  thr --> eval
+  cache[(Cached Gemini answers)] --> eval
+  eval -- imports --> back[Backend extract code]
+  eval --> res[(results.csv)]
+  res --> report[tools/report.py]
+  report --> md[eval/REPORT.md]

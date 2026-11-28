@@ -1,0 +1,28 @@
+flowchart LR
+  fin[POST finalize] --> wait{Extraction pending?}
+  wait -- "yes, under 90 s" --> poll[Poll every 0.5 s]
+  poll --> wait
+  wait -- "yes, after 90 s" --> e503[503, phone retries]
+  wait -- no --> build[build_record]
+  build --> status[complete or partial]
+  build --> kind{Item kind}
+  kind -- damage --> clear{Type clear, conf 0.5+?}
+  clear -- no --> rev1[INSP-REV review]
+  clear -- none --> skip[No items]
+  clear -- yes --> cat{Surface in catalog?}
+  cat -- no --> rev2[INSP-REV review]
+  cat -- peeling paint --> paint[Paint only]
+  cat -- yes --> rules[Surface rules]
+  kind -- nameplate --> wh[Water heater over 10 yr]
+  kind -- note --> nrules[Note text rules]
+  paint --> flag[Low quality or conf: review]
+  rules --> flag
+  flag --> merge[Merge drying lines]
+  rev1 --> merge
+  rev2 --> merge
+  wh --> merge
+  nrules --> merge
+  status --> valid{Schema valid?}
+  merge --> valid
+  valid -- no --> e500[500 error]
+  valid -- yes --> rec[(job_record.json)]

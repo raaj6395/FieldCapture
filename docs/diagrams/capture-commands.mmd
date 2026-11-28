@@ -1,0 +1,16 @@
+flowchart LR
+  speech[Final transcript] --> echo{TTS busy or echo?}
+  echo -- yes --> ignore[Ignore]
+  echo -- no --> strict[Strict grammar]
+  strict -- no match --> fuzzy[Fuzzy pass]
+  fuzzy -- no match --> chatter[Chatter / Unknown]
+  strict --> cmd([Command])
+  fuzzy --> cmd
+  cmd -- capture --> shot[Shot: room carry-over]
+  cmd -- retake --> shot
+  btn[Capture button] -- repeat last --> shot
+  cmd -- "note ..." --> note[Save note + read back]
+  cmd -- "pause / resume" --> life[JobState change]
+  cmd -- end job --> life
+  pad[Touchpad tap] --> life
+  shot --> pipe([Capture pipeline])

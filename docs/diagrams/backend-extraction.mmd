@@ -1,0 +1,35 @@
+sequenceDiagram
+  participant U as Phone upload
+  participant A as API app.py
+  participant S as store/jobs/id
+  participant X as Background task
+  participant G as Gemini guard
+  participant M as Gemini API
+  U->>A: POST /captures (meta + photo)
+  A->>S: photo, cid.json, OCR rule fields
+  A-->>U: 201 in ~2 ms
+  A->>X: run_extraction
+  alt nameplate
+    X->>G: nameplate prompt + photo
+  else damage
+    X->>G: damage prompt + spoken room, surface
+  end
+  Note over G: one call at a time, 13 s gap, daily cap
+  G->>M: generateContent (JSON schema)
+  M-->>G: response
+  G->>S: append logs/calls.jsonl
+  alt 200
+    G-->>X: fields + confidence
+    X->>X: nameplate: combine OCR + Gemini
+    X->>X: damage: type, size cap 0.5 or 0.8
+  else 503
+    G->>M: wait 20 s, retry, then fallback model
+  else 429, cap hit or error
+    G-->>X: raise
+    X->>X: keep OCR-only fields
+  end
+  X->>S: fields, extraction done
+  U->>A: POST /notes
+  A->>S: note, needs_review
+  A->>X: note structuring (same guard)
+  Note over U,M: command to fields 2.9 s median, ~13 s per item in an offline burst, ~$0.006 per job

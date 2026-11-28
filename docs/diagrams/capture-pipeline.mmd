@@ -1,0 +1,19 @@
+flowchart LR
+  shot([Shot]) --> act{Job ACTIVE?}
+  act -- no --> refuse[Spoken refusal]
+  act -- yes --> photo[capturePhoto]
+  photo --> score[Quality.score]
+  score --> np{Nameplate?}
+  np -- yes --> ocr[ML Kit OCR]
+  ocr --> edge[Text-at-edge check]
+  edge --> verdict{Verdict}
+  np -- no --> verdict
+  verdict -- blurry only --> silent[Silent extra shot]
+  silent --> photo
+  verdict -- other failure --> prompt[Spoken prompt, retake]
+  prompt --> photo
+  verdict -- "pass or tries used" --> best[Keep best attempt]
+  best --> save[Save photo + ocr.json]
+  save --> sj[(session.json)]
+  sj --> kick[Kick upload]
+  sj -- "~0.3 s after command" --> reply[Spoken confirmation]

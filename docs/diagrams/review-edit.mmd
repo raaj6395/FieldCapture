@@ -1,0 +1,24 @@
+sequenceDiagram
+  actor O as Office user
+  participant R as Review screen
+  participant D as Phone disk
+  participant B as Backend
+  participant L as mapping.py
+  O->>R: Review job / Past jobs
+  R->>B: GET /jobs/{id}
+  alt finalized record
+    B-->>R: job record
+  else 404 or unreachable
+    R->>D: session.json: local view
+  end
+  R->>D: load photos
+  O->>R: tap photo: full screen
+  O->>R: tap field, pick or type value
+  R->>B: POST .../captures/{cid}/fields/{name}
+  B->>B: check value, choices, size range
+  B->>B: source human, conf 1.0, previous = AI
+  B->>L: rebuild line items (typed size = measured)
+  L-->>B: new estimate
+  B->>B: schema check, write cid.json + record
+  B-->>R: updated record
+  Note over B: later finalize reads cid.json, edit survives

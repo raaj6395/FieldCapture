@@ -1,0 +1,33 @@
+sequenceDiagram
+  participant S as JobSession
+  participant D as Phone disk
+  participant W as WorkManager
+  participant U as UploadWorker
+  participant B as Backend
+  S->>D: cNN.jpg, cNN.ocr.json, session.json
+  S->>W: kick (network required)
+  Note over W: no signal: work waits
+  W->>U: run when connected
+  U->>D: read session.json + uploaded.txt
+  loop each capture and note not in uploaded.txt
+    U->>B: POST /captures or /notes
+    alt new id
+      B-->>U: 201 stored
+    else id already stored
+      B-->>U: 200 exists
+    end
+    U->>D: append id to uploaded.txt
+  end
+  alt any upload failed
+    U-->>W: retry, linear 15 s backoff
+  else STOPPED, all uploaded, not finalized
+    U->>B: POST /jobs/{id}/finalize
+    alt record built
+      B-->>U: 200 job record
+      U->>D: write finalized marker
+    else extraction still running
+      B-->>U: 503
+      U-->>W: retry, linear 15 s backoff
+    end
+  end
+  Note over S,B: offline drill: 6 items sent 6 s after signal, 0 lost, 0 duplicates

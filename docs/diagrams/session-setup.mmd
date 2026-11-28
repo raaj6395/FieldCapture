@@ -1,0 +1,12 @@
+flowchart LR
+  start([CONNECTING or RECONNECTING]) --> wait{Unfolded and worn?}
+  wait -- no --> waitg[Wait for glasses]
+  waitg --> wait
+  wait -- yes --> create[createSession]
+  create -- fails --> back
+  create --> sstart[session.start]
+  sstart --> caps[Add camera, speech, inputs]
+  caps --> live{Streaming in 20 s?}
+  live -- yes --> ok([LIVE event])
+  live -- no --> back[Release, backoff]
+  back --> wait

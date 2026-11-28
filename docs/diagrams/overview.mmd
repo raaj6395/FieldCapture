@@ -1,0 +1,48 @@
+flowchart TB
+  subgraph G["Glasses (DAT Mock Device Kit)"]
+    direction LR
+    mic[Mic + ASR]
+    btn[Capture button]
+    pad[Touchpad]
+    cam[Camera stream]
+  end
+  subgraph P["Phone app (Android)"]
+    direction LR
+    parse[CommandParser]
+    sess[JobSession]
+    qual[Quality check]
+    ocr[ML Kit OCR]
+    disk[("jobs/&lt;id&gt;/ on phone")]
+    queue[UploadWorker queue]
+    rev[Review screen]
+  end
+  subgraph B["Backend (FastAPI)"]
+    direction LR
+    api[API endpoints]
+    ext[Background extraction]
+    guard[Gemini guard]
+    map[Line-item mapping]
+    store[("store/jobs/&lt;id&gt;/")]
+    log[("logs/calls.jsonl")]
+  end
+  gem[Gemini API]
+  mic -- "B1: transcript" --> parse
+  btn -- "B1: repeat shot" --> sess
+  pad -- "B1: pause / resume" --> sess
+  cam -- "B1: capturePhoto" --> qual
+  parse --> sess
+  sess --> qual
+  qual --> ocr
+  ocr -- "saved + reply ~0.3 s" --> disk
+  disk --> queue
+  rev --> disk
+  queue -- "B2: HTTP, 0 lost" --> api
+  rev -- "B2: GET / edit" --> api
+  api --> store
+  api --> ext
+  api --> map
+  ext -- "fields 2.9 s median" --> store
+  map -- "~$0.006 per job" --> store
+  ext --> guard
+  guard --> log
+  guard -- "B3: 1 call per 13 s" --> gem

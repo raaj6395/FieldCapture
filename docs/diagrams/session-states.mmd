@@ -1,0 +1,29 @@
+stateDiagram-v2
+  [*] --> Boot: app start, Android perms
+  Boot: DAT initialize + mock pair
+  Boot --> Restored: open job in session.json
+  Boot --> IDLE: no open job
+  Restored: Restore job
+  Restored --> RECONNECTING: app restarted
+  IDLE --> DatPerm: Start job tapped
+  STOPPED --> DatPerm: Start job tapped
+  DatPerm: DAT camera + mic permission
+  DatPerm --> Guard: granted
+  Guard: Start guard
+  Guard --> IDLE: off / folded / not worn
+  Guard --> CONNECTING: glasses ready
+  CONNECTING --> Setup
+  RECONNECTING --> Setup
+  Setup: Session setup loop
+  Setup --> Setup: fail, backoff 1-30 s
+  Setup --> ACTIVE: stream live
+  Setup --> PAUSED: live, was paused
+  ACTIVE --> PAUSED: pause / tap / doff
+  PAUSED --> ACTIVE: resume / tap / don
+  ACTIVE --> RECONNECTING: device lost
+  PAUSED --> RECONNECTING: device lost
+  ACTIVE --> STOPPED: end job
+  PAUSED --> STOPPED: end job
+  RECONNECTING --> STOPPED: end job
+  CONNECTING --> STOPPED: end job
+  STOPPED --> [*]
