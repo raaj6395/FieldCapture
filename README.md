@@ -2,6 +2,119 @@
 
 A hands-free field capture app for Meta AI glasses: Android, Meta Wearables Device Access Toolkit (DAT) 1.1.0, run on the Mock Device Kit. A water-damage technician walks a house and only speaks: "capture nameplate", "capture damage kitchen north wall", "note subfloor soft by the cabinet". The phone checks every photo on the device and asks for a retake when it is bad. It saves everything locally first and uploads when there is signal. The backend turns the walk into one schema-validated JSON job record with a confidence on every field and draft estimate line items. The office reviews the record on the phone and can correct any field, and the estimate rebuilds.
 
+## How it works
+
+All screenshots are from the app on a Samsung S22 with the DAT Mock Device Kit; the photos are from a walk in our own home.
+
+### 1. Connect once, then check the glasses
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/1-connect.jpg" width="270" alt="Connect to Meta AI card"></td>
+<td width="50%"><img src="docs/images/2-ready.jpg" width="270" alt="Ready screen with glasses status"></td>
+</tr>
+<tr>
+<td><b>Connect to Meta AI.</b> The app registers with the Meta AI app once and remembers it. Until then the SDK hides the glasses, so the app says "Not connected to Meta AI" and blocks Start job.</td>
+<td><b>Ready.</b> The glasses' state is always visible: power, on face, hinge, heat, battery. Start job is blocked with the reason ("Glasses are folded. Open them first.") when the glasses can't record.</td>
+</tr>
+</table>
+
+### 2. Walk and talk: hands stay free
+
+<table>
+<tr>
+<td width="50%"><img src="docs/images/3-capture.jpg" width="270" alt="Recording with a spoken capture"></td>
+<td width="50%">
+
+The tech only speaks:
+
+- **"capture nameplate"** at an appliance
+- **"capture damage kitchen north wall"** at a stain
+- **"note subfloor soft by the cabinet"** for anything a photo can't show
+- **"retake"**, **"pause"**, **"resume"**, **"end job"**
+
+The glasses camera takes the photo. The phone checks it and **saves it before answering**, so nothing is lost even if the app is killed a second later. The reply ("Damage, kitchen, north wall.") comes 0.3-0.5 s after the command and shows on screen. Misheard words are tolerated ("Captain nameplate", "kitchin"), and the room carries over when the tech doesn't repeat it.
+
+</td>
+</tr>
+</table>
+
+### 3. A bad photo is caught on the spot
+
+<table>
+<tr>
+<td width="33%"><img src="docs/images/quality-sharp.jpg" width="200" alt="Sharp photo, accepted"><br>Sharp: accepted.</td>
+<td width="33%"><img src="docs/images/quality-motion-blur.jpg" width="200" alt="Motion-blurred photo, rejected"><br>Phone moved while shooting: <b>"Blurry. Hold still."</b></td>
+<td width="34%">
+
+Every photo is checked **on the phone**, with no network needed. The checks:
+- blur, plus motion blur
+- too dark
+- glare
+- nothing in view
+- nameplate text cut off at the edge
+
+On a bad photo the tech hears one short prompt, such as "Too dark. Turn on your light." or "Cut off. Step back.", and the app retakes. After 2 retakes it keeps the best photo, marks it `low` and lets the tech move on, so the check never blocks a walk.
+
+</td>
+</tr>
+</table>
+
+The two photos on the left are from our own phone. They are exactly the pair that set the motion-blur threshold: sharpness ratio 0.285 (sharp) vs 0.193 (blurred). How every threshold was picked is in [Capture quality check](#capture-quality-check-on-the-phone).
+
+### 4. No signal? It keeps working
+
+Photos and notes are queued on the phone and each one uploads as soon as there is signal. In a fully offline test, all 5 photos were on the server 16 s after the first attempt when the network came back, with 0 lost and 0 duplicates. In another drill the app was force-stopped mid-walk while offline, and all 6 items still arrived once there was signal.
+
+### 5. AI reads every photo while the tech keeps walking
+
+- **Nameplate:** two readers, ML Kit OCR on the phone and Gemini on the backend. When they agree, confidence goes up; when they disagree, it drops, so wrong answers stand out.
+- **Damage:** the room and surface come from the tech's words. Gemini gives the damage type and a rough size.
+- **Note:** Gemini turns the spoken text into location, issue, material and severity.
+
+This happens in the background, so by "end job" most photos are already read and the job record is ready about 1 s later.
+
+### 6. Review, zoom, correct
+
+<table>
+<tr>
+<td width="33%"><img src="docs/images/4-review.jpg" width="230" alt="Review card with fields and estimate"></td>
+<td width="33%"><img src="docs/images/5-photo.jpg" width="230" alt="Full-screen photo with AI fields"></td>
+<td width="34%"><img src="docs/images/6-edit.jpg" width="230" alt="Editing a field"></td>
+</tr>
+<tr>
+<td><b>Each photo shows what the AI read and what it would bill.</b> Every field has a confidence bar; anything under 0.5 says "check". The line items this photo produced sit right under it, flagged for review when unsure.</td>
+<td><b>Tap a photo</b> to see it full screen with pinch-zoom, next to the fields read from it. It works offline, because the photos stay on the phone.</td>
+<td><b>Tap a field to correct it.</b> Lists for damage type, appliance, room and surface; numbers for size; text for make, model and serial. The estimate rebuilds at once, and the AI's original is kept.</td>
+</tr>
+</table>
+
+### 7. The output: one JSON job record
+
+The kitchen wall stain from the review screenshot above (capture `c16`), as it appears in the record:
+
+```json
+{
+  "capture_id": "c16", "type": "damage", "voice_command": "Capture damage wall",
+  "quality": { "flag": "ok", "attempts": 1 },
+  "fields": {
+    "room":        { "value": "kitchen",     "confidence": 0.9,  "source": "voice" },
+    "surface":     { "value": "wall",        "confidence": 0.9,  "source": "voice" },
+    "damage_type": { "value": "water_stain", "confidence": 0.85, "source": "vlm:gemini-3.1-flash-lite" },
+    "size_cm":     { "value": { "width": 60, "height": 70 }, "confidence": 0.4, "source": "vlm:gemini-3.1-flash-lite" }
+  }
+}
+```
+
+and one of the draft line items it produced:
+
+```json
+{ "code": "PNT-WALL", "description": "Seal (stain-block) and paint wall", "qty": 4.5, "unit": "sq ft",
+  "qty_basis": "estimated", "source_ids": ["c16"], "confidence": 0.4, "status": "needs_review" }
+```
+
+Each record also holds the session events (start, pause, disconnect, reconnect, stop), every note with its structured fields, and a summary. It is validated against [`backend/schema/job_record.schema.json`](backend/schema/job_record.schema.json) on every finalize. Full records: [`samples/`](samples/).
+
 ## Deliverables
 
 | Brief deliverable | Where | Status |
