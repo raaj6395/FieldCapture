@@ -167,7 +167,7 @@ class JobSession(private val app: Application) {
     if (prefs.getBoolean("muted_beeps", false)) quietBeeps(false)
     restore()
     refreshQueue()
-    UploadWorker.kick(app)
+    UploadWorker.kick(app, fresh = true)
   }
 
   fun refreshQueue() {

@@ -74,6 +74,7 @@ private fun fetchRecord(id: String): JSONObject? {
   val c = URL("${BuildConfig.BACKEND_URL}/jobs/$id").openConnection() as HttpURLConnection
   return try {
     c.connectTimeout = 5_000
+    c.setRequestProperty("ngrok-skip-browser-warning", "1")
     c.readTimeout = 10_000
     if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else null
   } finally {

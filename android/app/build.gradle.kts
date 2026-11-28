@@ -1,4 +1,7 @@
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+val local = Properties().apply { rootProject.file("local.properties").takeIf { it.exists() }?.inputStream()?.use { load(it) } }
 
 plugins {
   alias(libs.plugins.android.application)
@@ -23,7 +26,7 @@ android {
     versionName = "0.1"
     manifestPlaceholders["mwdat_application_id"] = "0"
     manifestPlaceholders["mwdat_client_token"] = "0"
-    buildConfigField("String", "BACKEND_URL", "\"http://127.0.0.1:8000\"")
+    buildConfigField("String", "BACKEND_URL", "\"${local.getProperty("fc.backend", "http://127.0.0.1:8000")}\"")
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 

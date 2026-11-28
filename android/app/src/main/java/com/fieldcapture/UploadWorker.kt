@@ -98,6 +98,7 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
       c.readTimeout = readTimeout
       c.doOutput = true
       c.setRequestProperty("Content-Type", type)
+      c.setRequestProperty("ngrok-skip-browser-warning", "1")
       c.setFixedLengthStreamingMode(body.size)
       c.outputStream.use { it.write(body) }
       c.responseCode
@@ -115,12 +116,12 @@ class UploadWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ctx
 
     fun uploaded(dir: File) = File(dir, "uploaded.txt").takeIf { it.exists() }?.readLines()?.toSet().orEmpty()
 
-    fun kick(ctx: Context) {
+    fun kick(ctx: Context, fresh: Boolean = false) {
       val req = OneTimeWorkRequestBuilder<UploadWorker>()
           .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
-          .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.SECONDS)
+          .setBackoffCriteria(BackoffPolicy.LINEAR, 15, TimeUnit.SECONDS)
           .build()
-      WorkManager.getInstance(ctx).enqueueUniqueWork("upload", ExistingWorkPolicy.APPEND_OR_REPLACE, req)
+      WorkManager.getInstance(ctx).enqueueUniqueWork("upload", if (fresh) ExistingWorkPolicy.REPLACE else ExistingWorkPolicy.APPEND_OR_REPLACE, req)
     }
   }
 }
