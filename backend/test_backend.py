@@ -121,3 +121,12 @@ def test_tiny_damage_area_never_gives_zero_quantity():
         "room": {"value": "kitchen", "confidence": 0.9}, "size_cm": {"value": {"width": 3, "height": 2}, "confidence": 0.5}}}
     items = mapping.damage(c, 2026)
     assert items and all(i["qty"] > 0 for i in items)
+
+
+def test_fixture_damage_goes_to_review_and_insulation_gets_its_own_item():
+    sink = line_items([cap("c1", damage_type=("water_damage", 0.9), surface=("sink", 0.9))], [], 2026)
+    assert codes(sink) == ["INSP-REV"] and sink[0]["status"] == "needs_review" and "sink" in sink[0]["reason"]
+    fan = line_items([cap("c1", damage_type=("water_stain", 0.9), surface=("ceiling fan", 0.9))], [], 2026)
+    assert codes(fan) == ["INSP-REV"]
+    ins = line_items([cap("c1", damage_type=("water_damage", 0.9), surface=("insulation", 0.9))], [], 2026)
+    assert codes(ins) == ["DRY-EQ", "INS-RR"]

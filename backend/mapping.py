@@ -10,6 +10,9 @@ DEFAULT_SQFT = 10.0
 DRYING_DAYS = 3
 WH_MAX_AGE = 10
 CM2_PER_SQFT = 929.03
+WALLS = {"", "wall", "north wall", "south wall", "east wall", "west wall", "drywall", "baseboard", "trim", "stud"}
+FLOORS = {"floor", "subfloor"}
+CABINETS = {"cabinet", "vanity"}
 
 
 def val(fields, name):
@@ -47,8 +50,10 @@ def damage(c, today_year):
     low = c["quality"]["flag"] == "low"
     status = "needs_review" if low or conf < REVIEW_BELOW else None
     s = surface or ""
+    if s not in WALLS | FLOORS | CABINETS | {"ceiling", "insulation"}:
+        return [item("INSP-REV", 1, "default", ids, conf, room, "needs_review", f"{dtype} on {s}: no catalog item, price by hand")]
     out = []
-    if "ceiling" in s:
+    if s == "ceiling":
         if dtype == "mold":
             out += [item("MOLD-TRT", sqft, basis, ids, conf, room, status), item("CLG-RR", sqft, basis, ids, conf, room, status)]
         else:
@@ -56,9 +61,11 @@ def damage(c, today_year):
             if sqft >= SMALL_SQFT or dtype == "water_damage":
                 out += [item("CLG-RR", sqft, basis, ids, conf, room, status), item("INS-RR", sqft, basis, ids, conf, room, status),
                         item("DRY-EQ", DRYING_DAYS, "default", ids, conf, room, status)]
-    elif "floor" in s:
+    elif s == "insulation":
+        out += [item("INS-RR", sqft, basis, ids, conf, room, status), item("DRY-EQ", DRYING_DAYS, "default", ids, conf, room, status)]
+    elif s in FLOORS:
         out += [item("SUBF-RR", sqft, basis, ids, conf, room, status), item("DRY-EQ", DRYING_DAYS, "default", ids, conf, room, status)]
-    elif "cabinet" in s or "vanity" in s:
+    elif s in CABINETS:
         out.append(item("CAB-DR", 1, "default", ids, conf, room, status))
     elif dtype == "mold":
         out += [item("MOLD-TRT", sqft, basis, ids, conf, room, status), item("DRY-RR", sqft, basis, ids, conf, room, status)]

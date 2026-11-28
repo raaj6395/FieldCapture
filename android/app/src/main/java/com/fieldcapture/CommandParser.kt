@@ -21,8 +21,12 @@ object CommandParser {
   ).sortedByDescending { it.length }
 
   val SURFACES = listOf(
-      "north wall", "south wall", "east wall", "west wall", "wall", "ceiling", "floor", "subfloor", "baseboard",
-      "cabinet", "window", "door", "countertop", "carpet", "tile", "drywall", "pipe", "vanity",
+      "north wall", "south wall", "east wall", "west wall", "wall", "drywall", "baseboard", "trim", "stud", "insulation",
+      "door frame", "window sill", "window", "door",
+      "ceiling", "ceiling fan", "light fixture", "vent", "duct", "skylight", "roof",
+      "floor", "subfloor", "carpet", "carpet pad", "hardwood", "laminate", "vinyl", "tile", "grout", "joist", "slab", "foundation",
+      "cabinet", "vanity", "countertop", "backsplash", "sink", "faucet", "toilet", "bathtub", "tub", "shower", "pipe", "drain",
+      "water heater", "dishwasher", "washing machine", "refrigerator", "outlet", "switch", "fan", "curtain rod",
   ).sortedByDescending { it.length }
 
   private val FIXES = listOf(
@@ -30,6 +34,7 @@ object CommandParser {
       "captured" to "capture", "captures" to "capture", "capturing" to "capture", "captain" to "capture", "capital" to "capture", "capture the" to "capture",
       "notes" to "note", "node" to "note", "sub floor" to "subfloor", "basements" to "basement",
       "damaged" to "damage", "damages" to "damage", "celling" to "ceiling", "sealing" to "ceiling",
+      "sync" to "sink", "zinc" to "sink", "hanger" to "curtain rod", "toilets" to "toilet", "pipes" to "pipe",
   )
 
   private val FILLER = setOf("in", "the", "on", "at", "of", "a", "by", "and")

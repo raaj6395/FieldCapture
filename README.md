@@ -58,7 +58,7 @@ flowchart TB
 |---|---|
 | start job / pause / resume / end job | session lifecycle; the job record outlives SDK sessions |
 | capture nameplate | photo -> quality check -> OCR -> "Nameplate." |
-| capture damage [room] [surface] | e.g. "capture damage kitchen north wall"; room carries over from the last capture if omitted |
+| capture damage [room] [surface] | e.g. "capture damage kitchen north wall"; room carries over from the last capture if omitted. About 50 surfaces (walls, ceiling, flooring, framing, fixtures, appliances); surfaces with no catalog line item go to review |
 | note [free text] | "Noted: ..." read back, flagged for review |
 | retake | re-shoots the last capture |
 
