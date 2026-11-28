@@ -112,3 +112,12 @@ def test_partial_then_complete_and_schema_valid(client):
 
 def test_bad_ids_rejected(client):
     assert post_capture(client, "../etc").status_code == 400
+
+
+def test_tiny_damage_area_never_gives_zero_quantity():
+    import mapping
+    c = {"capture_id": "c1", "quality": {"flag": "ok"}, "fields": {
+        "damage_type": {"value": "water_stain", "confidence": 0.9}, "surface": {"value": "wall", "confidence": 0.9},
+        "room": {"value": "kitchen", "confidence": 0.9}, "size_cm": {"value": {"width": 3, "height": 2}, "confidence": 0.5}}}
+    items = mapping.damage(c, 2026)
+    assert items and all(i["qty"] > 0 for i in items)

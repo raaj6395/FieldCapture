@@ -18,7 +18,7 @@ def val(fields, name):
 
 
 def item(code, qty, basis, sources, conf, room=None, status=None, reason=None):
-    i = dict(CATALOG[code], qty=round(qty, 1), qty_basis=basis, room=room, source_ids=list(sources), confidence=round(conf, 2),
+    i = dict(CATALOG[code], qty=max(round(qty, 1), 0.1), qty_basis=basis, room=room, source_ids=list(sources), confidence=round(conf, 2),
              status=status or ("needs_review" if conf < REVIEW_BELOW else "draft"))
     if reason:
         i["reason"] = reason
