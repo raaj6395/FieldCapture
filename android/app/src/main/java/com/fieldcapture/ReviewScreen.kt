@@ -149,6 +149,40 @@ private fun Fields(fields: JSONObject?) {
   }
 }
 
+private fun sources(li: JSONObject) = li.optJSONArray("source_ids")?.let { a -> (0 until a.length()).map(a::getString) }.orEmpty()
+
+@Composable
+private fun LineRow(li: JSONObject, modifier: Modifier, from: String?) {
+  val status = li.optString("status")
+  Column(modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+      Text(li.optString("description"), style = Fc.body, modifier = Modifier.weight(1f))
+      ConfidenceMeter(li.optDouble("confidence", 0.0))
+    }
+    Text(listOfNotNull(li.getString("code"),
+        "${qty(li.optDouble("qty", 0.0))} ${li.optString("unit").let { u -> if (u == "day" && li.optDouble("qty") != 1.0) "days" else u }}, ${BASIS[li.optString("qty_basis")] ?: li.optString("qty_basis")}",
+        from).joinToString("  ·  "), style = Fc.label)
+    if (status != "draft") {
+      Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        FcIcon(Lucide.alert, Fc.amber, 14.dp)
+        Text(human(status) + (li.optString("reason").takeIf { it.isNotEmpty() }?.let { ": $it" } ?: ""), style = Fc.label.copy(color = Fc.amber))
+      }
+    }
+  }
+}
+
+@Composable
+private fun Estimate(lines: List<JSONObject>, id: String) {
+  val mine = lines.filter { id in sources(it) }
+  if (mine.isEmpty()) return
+  Hairline()
+  Text("Estimate from this", style = Fc.meta)
+  mine.forEach { li ->
+    val others = sources(li) - id
+    LineRow(li, Modifier, if (others.isEmpty()) null else "shared with ${others.joinToString()}")
+  }
+}
+
 @Composable
 fun ReviewScreen(jobId: String, onBack: () -> Unit) {
   val ctx = LocalContext.current
@@ -193,6 +227,7 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
         }
       }
     }
+    val lines = r.optJSONArray("line_items")?.objs().orEmpty()
     val caps = r.optJSONArray("captures")?.objs().orEmpty()
     if (caps.isNotEmpty()) item { SectionLabel("Photos") }
     items(caps) { c ->
@@ -222,6 +257,7 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
             }
             Hairline()
             Fields(c.optJSONObject("fields"))
+            Estimate(lines, id)
           }
         }
       }
@@ -241,33 +277,18 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
               Hairline()
               Fields(f)
             }
+            Estimate(lines, n.getString("note_id"))
           }
         }
       }
     }
-    val lines = r.optJSONArray("line_items")?.objs().orEmpty()
     if (lines.isNotEmpty()) {
-      item { SectionLabel("Draft estimate") }
+      item { SectionLabel("Full estimate") }
       item {
         Column(Modifier.padding(bottom = 32.dp).clip(Fc.rCard).background(Fc.card).border(1.dp, Fc.hairline, Fc.rCard)) {
           lines.forEachIndexed { i, li ->
             if (i > 0) Box(Modifier.padding(start = 16.dp)) { Hairline() }
-            val status = li.optString("status")
-            val sources = li.optJSONArray("source_ids")?.let { a -> (0 until a.length()).map(a::getString) }.orEmpty()
-            Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-              Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(li.optString("description"), style = Fc.body, modifier = Modifier.weight(1f))
-                ConfidenceMeter(li.optDouble("confidence", 0.0))
-              }
-              Text("${li.getString("code")}  ·  ${qty(li.optDouble("qty", 0.0))} ${li.optString("unit").let { u -> if (u == "day" && li.optDouble("qty") != 1.0) "days" else u }}, ${BASIS[li.optString("qty_basis")] ?: li.optString("qty_basis")}  ·  from ${sources.joinToString()}",
-                  style = Fc.label)
-              if (status != "draft") {
-                Row(Modifier.padding(top = 4.dp), verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                  FcIcon(Lucide.alert, Fc.amber, 14.dp)
-                  Text(human(status) + (li.optString("reason").takeIf { it.isNotEmpty() }?.let { ": $it" } ?: ""), style = Fc.label.copy(color = Fc.amber))
-                }
-              }
-            }
+            LineRow(li, Modifier.padding(16.dp), sources(li).joinToString().let { "from $it" })
           }
         }
       }

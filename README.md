@@ -89,7 +89,7 @@ Every photo is scored on the phone (`Quality.kt`, the same maths as `tools/quali
 
 ## Reviewing a job in the app
 
-After "end job" the main screen offers **Review job**, and **Past jobs** lists the last five. The review screen shows every photo with its quality result, each extracted field with its confidence (green >= 0.8, amber 0.5-0.8, red < 0.5 with "check"; grey "not read" when the field is absent), the notes with their structured fields, and the draft line items (highlighted when they need review, with quantity basis and source ids). It reads the finalized record from the backend (`GET /jobs/{id}`); when the job has not uploaded yet or the backend is unreachable it shows what is on the phone (photos, quality, spoken room/surface) and says the AI results arrive after upload.
+After "end job" the main screen offers **Review job**, and **Past jobs** lists the last five. The review screen shows every photo with its quality result, each extracted field with its confidence (green >= 0.8, amber 0.5-0.8, red < 0.5 with "check"; grey "not read" when the field is absent), the notes with their structured fields, and under each photo or note the draft line items it produced (highlighted when they need review, with quantity basis; items shared across photos name the others), with the full estimate listed at the end. It reads the finalized record from the backend (`GET /jobs/{id}`); when the job has not uploaded yet or the backend is unreachable it shows what is on the phone (photos, quality, spoken room/surface) and says the AI results arrive after upload.
 
 ## Job record, line items, offline
 
