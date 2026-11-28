@@ -249,7 +249,7 @@ async def get_job(job_id: str):
 
 
 EDITABLE = {"make", "model", "serial", "mfg_date", "appliance", "room", "surface", "damage_type", "size_cm"}
-CHOICES = {"damage_type": set(extract.DAMAGE_TYPES), "appliance": nameplate.APPLIANCE_TYPES | {"other"}}
+CHOICES = {"damage_type": set(extract.DAMAGE_TYPES)}
 
 
 def edited_value(name, v):

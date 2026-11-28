@@ -51,7 +51,9 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import android.widget.Toast
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextButton
@@ -147,7 +149,7 @@ private fun qty(v: Double) = if (v % 1.0 == 0.0) v.toLong().toString() else "%.1
 private val EDIT_KEYS = mapOf("nameplate" to listOf("make", "model", "serial", "mfg_date", "appliance"), "damage" to listOf("room", "surface", "damage_type", "size_cm"))
 private val CHOICES = mapOf(
     "damage_type" to listOf("water_stain", "water_damage", "mold", "crack", "hole", "peeling_paint", "swelling", "none"),
-    "appliance" to listOf("water_heater", "washing_machine", "dryer", "hvac_compressor", "furnace", "refrigerator", "dishwasher", "other"),
+    "appliance" to listOf("water_heater", "washing_machine", "dryer", "hvac_compressor", "furnace", "refrigerator", "dishwasher"),
     "room" to CommandParser.ROOMS.sorted(),
     "surface" to CommandParser.SURFACES.sorted(),
 )
@@ -206,7 +208,8 @@ private fun Fields(fields: JSONObject?, kind: String? = null, onEdit: ((String, 
 private fun FieldEditor(key: String, f: JSONObject, onSave: (Any?) -> Unit, onCancel: () -> Unit) {
   val v = f.opt("value")
   val choices = CHOICES[key]
-  var text by remember { mutableStateOf(if (absent(v) || v is JSONObject) "" else v.toString()) }
+  val typed = key == "appliance"
+  var text by remember { mutableStateOf(if (absent(v) || v is JSONObject || (choices != null && v.toString() in choices)) "" else human(v.toString())) }
   var w by remember { mutableStateOf((v as? JSONObject)?.optInt("width")?.takeIf { it > 0 }?.toString() ?: "") }
   var h by remember { mutableStateOf((v as? JSONObject)?.optInt("height")?.takeIf { it > 0 }?.toString() ?: "") }
   val prev = f.optJSONObject("previous")?.opt("value")?.takeIf { !absent(it) }
@@ -218,7 +221,8 @@ private fun FieldEditor(key: String, f: JSONObject, onSave: (Any?) -> Unit, onCa
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
           if (prev != null) Text("AI read: ${display(key, prev)}", style = Fc.label)
           when {
-            choices != null -> Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+            choices != null -> Column {
+             Column(Modifier.heightIn(max = if (typed) 280.dp else 360.dp).verticalScroll(rememberScrollState())) {
               choices.forEach { c ->
                 Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(Fc.rSmall).clickable { onSave(c) }.padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically) {
@@ -226,6 +230,11 @@ private fun FieldEditor(key: String, f: JSONObject, onSave: (Any?) -> Unit, onCa
                   if (c == v?.toString()) FcIcon(Lucide.check, Fc.amber, 16.dp)
                 }
               }
+             }
+              if (typed) OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth().padding(top = 8.dp), singleLine = true,
+                  label = { Text("Other, type it") }, placeholder = { Text("e.g. boiler, sump pump") },
+                  keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                  keyboardActions = KeyboardActions(onDone = { if (text.isNotBlank()) onSave(text.trim()) }))
             }
             key == "size_cm" -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
               OutlinedTextField(w, { w = it.filter(Char::isDigit) }, Modifier.weight(1f), label = { Text("Width cm") }, singleLine = true,
@@ -234,11 +243,14 @@ private fun FieldEditor(key: String, f: JSONObject, onSave: (Any?) -> Unit, onCa
                   keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
             }
             else -> OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), singleLine = true,
-                placeholder = { Text("Leave empty if not on the label") })
+                placeholder = { Text("Leave empty if not on the label") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { onSave(text.trim().ifEmpty { null }) }))
           }
         }
       },
       confirmButton = {
+        if (typed && text.isNotBlank()) TextButton({ onSave(text.trim()) }) { Text("Save", color = Fc.amber) }
         if (choices == null) TextButton({
           onSave(if (key == "size_cm") (if (w.isNotEmpty() && h.isNotEmpty()) JSONObject().put("width", w.toInt()).put("height", h.toInt()) else null)
                  else text.trim().ifEmpty { null })

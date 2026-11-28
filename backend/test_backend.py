@@ -161,6 +161,7 @@ def test_bad_edits_are_rejected(client):
     finalize(client, ["c01"])
     url = "/jobs/J1/captures/c01/fields/"
     assert client.post(url + "damage_type", json={"value": "flood"}).status_code == 400
+    assert client.post(url + "appliance", json={"value": "Sump pump"}).json()["captures"][0]["fields"]["appliance"]["value"] == "Sump pump"
     assert client.post(url + "size_cm", json={"value": {"width": -3}}).status_code == 400
     assert client.post(url + "tech_id", json={"value": "x"}).status_code == 400
     assert client.post("/jobs/J1/captures/c09/fields/serial", json={"value": "x"}).status_code == 404
