@@ -49,6 +49,15 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import android.widget.Toast
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.text.input.KeyboardType
+import kotlinx.coroutines.launch
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -135,15 +144,44 @@ private fun display(key: String, v: Any?): String = when {
 
 private fun qty(v: Double) = if (v % 1.0 == 0.0) v.toLong().toString() else "%.1f".format(v)
 
+private val EDIT_KEYS = mapOf("nameplate" to listOf("make", "model", "serial", "mfg_date", "appliance"), "damage" to listOf("room", "surface", "damage_type", "size_cm"))
+private val CHOICES = mapOf(
+    "damage_type" to listOf("water_stain", "water_damage", "mold", "crack", "hole", "peeling_paint", "swelling", "none"),
+    "appliance" to listOf("water_heater", "washing_machine", "dryer", "hvac_compressor", "furnace", "refrigerator", "dishwasher", "other"),
+    "room" to CommandParser.ROOMS.sorted(),
+    "surface" to CommandParser.SURFACES.sorted(),
+)
+
+private fun postEdit(jobId: String, captureId: String, key: String, value: Any?): JSONObject? {
+  val c = URL("${BuildConfig.BACKEND_URL}/jobs/$jobId/captures/$captureId/fields/$key").openConnection() as HttpURLConnection
+  return try {
+    c.connectTimeout = 5_000
+    c.readTimeout = 10_000
+    c.requestMethod = "POST"
+    c.doOutput = true
+    c.setRequestProperty("Content-Type", "application/json")
+    c.setRequestProperty("ngrok-skip-browser-warning", "1")
+    c.outputStream.use { it.write(JSONObject().put("value", value ?: JSONObject.NULL).toString().toByteArray()) }
+    if (c.responseCode == 200) JSONObject(c.inputStream.bufferedReader().readText()) else null
+  } finally {
+    c.disconnect()
+  }
+}
+
 @Composable
-private fun FieldRow(key: String, f: JSONObject) {
+private fun FieldRow(key: String, f: JSONObject, onEdit: (() -> Unit)? = null) {
   val v = f.opt("value")
   val conf = f.optDouble("confidence", 0.0)
-  Row(Modifier.fillMaxWidth().padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+  val human = f.optString("source") == "human"
+  Row(Modifier.fillMaxWidth().then(if (onEdit != null) Modifier.clickable(onClickLabel = "Edit ${LABEL[key] ?: human(key)}", onClick = onEdit) else Modifier)
+      .padding(vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
     Text(LABEL[key] ?: human(key), style = Fc.label, modifier = Modifier.width(88.dp))
     Text(display(key, v), style = if (absent(v)) Fc.body.copy(color = Fc.muted) else Fc.body, modifier = Modifier.weight(1f),
         maxLines = 2, overflow = TextOverflow.Ellipsis)
-    if (!absent(v)) {
+    if (human) {
+      FcIcon(Lucide.check, Fc.good, 14.dp)
+      Text("Edited", style = Fc.label.copy(color = Fc.good), modifier = Modifier.padding(start = 4.dp))
+    } else if (!absent(v)) {
       if (conf < CONF_CHECK) Text("Check", style = Fc.label.copy(color = Fc.amber), modifier = Modifier.padding(end = 8.dp))
       ConfidenceMeter(conf)
       Text("%.2f".format(conf), style = Fc.meta, modifier = Modifier.padding(start = 8.dp))
@@ -152,12 +190,62 @@ private fun FieldRow(key: String, f: JSONObject) {
 }
 
 @Composable
-private fun Fields(fields: JSONObject?) {
+private fun Fields(fields: JSONObject?, kind: String? = null, onEdit: ((String, JSONObject) -> Unit)? = null) {
   fields ?: return
-  val keys = fields.keys().asSequence().filter { it != "needs_review" && fields.optJSONObject(it) != null }.toList()
+  val editable = if (onEdit != null) EDIT_KEYS[kind].orEmpty() else emptyList()
+  val keys = (fields.keys().asSequence().filter { it != "needs_review" && fields.optJSONObject(it) != null }.toList() + editable).distinct()
   Column {
-    keys.sortedBy { ORDER.indexOf(it).let { i -> if (i < 0) 99 else i } }.forEach { FieldRow(it, fields.getJSONObject(it)) }
+    keys.sortedBy { ORDER.indexOf(it).let { i -> if (i < 0) 99 else i } }.forEach { k ->
+      val f = fields.optJSONObject(k) ?: JSONObject().put("value", JSONObject.NULL).put("confidence", 0.0)
+      FieldRow(k, f, if (k in editable) ({ onEdit!!(k, f) }) else null)
+    }
   }
+}
+
+@Composable
+private fun FieldEditor(key: String, f: JSONObject, onSave: (Any?) -> Unit, onCancel: () -> Unit) {
+  val v = f.opt("value")
+  val choices = CHOICES[key]
+  var text by remember { mutableStateOf(if (absent(v) || v is JSONObject) "" else v.toString()) }
+  var w by remember { mutableStateOf((v as? JSONObject)?.optInt("width")?.takeIf { it > 0 }?.toString() ?: "") }
+  var h by remember { mutableStateOf((v as? JSONObject)?.optInt("height")?.takeIf { it > 0 }?.toString() ?: "") }
+  val prev = f.optJSONObject("previous")?.opt("value")?.takeIf { !absent(it) }
+  AlertDialog(
+      onDismissRequest = onCancel,
+      containerColor = Fc.card,
+      title = { Text("Edit ${(LABEL[key] ?: human(key)).lowercase()}", style = Fc.heading) },
+      text = {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+          if (prev != null) Text("AI read: ${display(key, prev)}", style = Fc.label)
+          when {
+            choices != null -> Column(Modifier.heightIn(max = 360.dp).verticalScroll(rememberScrollState())) {
+              choices.forEach { c ->
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).clip(Fc.rSmall).clickable { onSave(c) }.padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                  Text(human(c), style = Fc.body, modifier = Modifier.weight(1f))
+                  if (c == v?.toString()) FcIcon(Lucide.check, Fc.amber, 16.dp)
+                }
+              }
+            }
+            key == "size_cm" -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+              OutlinedTextField(w, { w = it.filter(Char::isDigit) }, Modifier.weight(1f), label = { Text("Width cm") }, singleLine = true,
+                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+              OutlinedTextField(h, { h = it.filter(Char::isDigit) }, Modifier.weight(1f), label = { Text("Height cm") }, singleLine = true,
+                  keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number))
+            }
+            else -> OutlinedTextField(text, { text = it }, Modifier.fillMaxWidth(), singleLine = true,
+                placeholder = { Text("Leave empty if not on the label") })
+          }
+        }
+      },
+      confirmButton = {
+        if (choices == null) TextButton({
+          onSave(if (key == "size_cm") (if (w.isNotEmpty() && h.isNotEmpty()) JSONObject().put("width", w.toInt()).put("height", h.toInt()) else null)
+                 else text.trim().ifEmpty { null })
+        }) { Text("Save", color = Fc.amber) }
+      },
+      dismissButton = { TextButton(onCancel) { Text("Cancel", color = Fc.text2) } },
+  )
 }
 
 private fun sources(li: JSONObject) = li.optJSONArray("source_ids")?.let { a -> (0 until a.length()).map(a::getString) }.orEmpty()
@@ -199,7 +287,10 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
   val ctx = LocalContext.current
   var rec by remember { mutableStateOf<JSONObject?>(null) }
   var remote by remember { mutableStateOf(true) }
-  var open by remember { mutableStateOf<JSONObject?>(null) }
+  var open by remember { mutableStateOf<String?>(null) }
+  var editing by remember { mutableStateOf<Triple<String, String, JSONObject>?>(null) }
+  val scope = rememberCoroutineScope()
+  val edit: ((JSONObject) -> ((String, JSONObject) -> Unit))? = if (remote) { c -> { k, f -> editing = Triple(c.getString("capture_id"), k, f) } } else null
   LaunchedEffect(jobId) {
     val r = withContext(Dispatchers.IO) { runCatching { fetchRecord(jobId) }.getOrNull() }
     remote = r != null
@@ -249,7 +340,7 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
         Card {
           Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-              Box(Modifier.size(72.dp).clip(Fc.rSmall).background(Fc.raised).clickable(onClickLabel = "Open photo") { open = c }) {
+              Box(Modifier.size(72.dp).clip(Fc.rSmall).background(Fc.raised).clickable(onClickLabel = "Open photo") { open = id }) {
                 bmp?.let { Image(it.asImageBitmap(), contentDescription = "Photo $id", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
               }
               Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -261,7 +352,7 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
               }
             }
             Hairline()
-            Fields(c.optJSONObject("fields"))
+            Fields(c.optJSONObject("fields"), c.getString("type"), edit?.invoke(c))
             Estimate(lines, id)
           }
         }
@@ -288,7 +379,19 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
       }
     }
   }
-  open?.let { c -> PhotoViewer(jobId, c, rec?.optJSONArray("line_items")?.objs().orEmpty()) { open = null } }
+  val caps = rec?.optJSONArray("captures")?.objs().orEmpty()
+  open?.let { id -> caps.firstOrNull { it.getString("capture_id") == id } }?.let { c ->
+    PhotoViewer(jobId, c, rec?.optJSONArray("line_items")?.objs().orEmpty(), edit?.invoke(c)) { open = null }
+  }
+  editing?.let { (cid, key, f) ->
+    FieldEditor(key, f, onCancel = { editing = null }, onSave = { value ->
+      editing = null
+      scope.launch {
+        val r = withContext(Dispatchers.IO) { runCatching { postEdit(jobId, cid, key, value) }.getOrNull() }
+        if (r != null) rec = r else Toast.makeText(ctx, "Couldn't save. Check the connection.", Toast.LENGTH_SHORT).show()
+      }
+    })
+  }
 }
 
 @Composable
@@ -304,7 +407,7 @@ private fun QualityLine(c: JSONObject) {
 }
 
 @Composable
-private fun PhotoViewer(jobId: String, c: JSONObject, lines: List<JSONObject>, onClose: () -> Unit) {
+private fun PhotoViewer(jobId: String, c: JSONObject, lines: List<JSONObject>, onEdit: ((String, JSONObject) -> Unit)?, onClose: () -> Unit) {
   val ctx = LocalContext.current
   val id = c.getString("capture_id")
   val bmp by produceState<Bitmap?>(null, id) { value = withContext(Dispatchers.IO) { thumbnail(ctx, jobId, id, 1) } }
@@ -332,7 +435,7 @@ private fun PhotoViewer(jobId: String, c: JSONObject, lines: List<JSONObject>, o
       Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         QualityLine(c)
         Hairline()
-        Fields(c.optJSONObject("fields"))
+        Fields(c.optJSONObject("fields"), c.getString("type"), onEdit)
         Estimate(lines, id)
       }
     }

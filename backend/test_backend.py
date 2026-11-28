@@ -137,3 +137,30 @@ def test_peeling_paint_is_paint_only():
     assert codes(wall) == ["PNT-WALL"]
     ceiling = line_items([cap("c1", damage_type=("peeling_paint", 0.9), surface=("ceiling", 0.9), size_cm=({"width": 120, "height": 90}, 0.6))], [], 2026)
     assert codes(ceiling) == ["PNT-CLG"]
+
+
+def test_human_edit_overrides_ai_keeps_original_and_rebuilds_estimate(client, tmp_path):
+    post_capture(client, "c01", surface="wall")
+    finalize(client, ["c01"])
+    url = "/jobs/J1/captures/c01/fields/"
+    rec = client.post(url + "damage_type", json={"value": "hole"}).json()
+    f = rec["captures"][0]["fields"]["damage_type"]
+    assert f["value"] == "hole" and f["source"] == "human" and f["confidence"] == 1.0 and f["previous"] is None
+    rec = client.post(url + "size_cm", json={"value": {"width": 120, "height": 90}}).json()
+    assert {"DRY-RR", "PNT-WALL"} <= set(codes(rec["line_items"])) and "DRY-PATCH" not in codes(rec["line_items"])
+    assert all(i["qty_basis"] == "measured" for i in rec["line_items"] if i["unit"] == "sq ft")
+    rec = client.post(url + "damage_type", json={"value": "none"}).json()
+    assert rec["line_items"] == [] and rec["captures"][0]["fields"]["damage_type"]["previous"] is None
+    assert client.get("/jobs/J1").json() == rec
+    again = finalize(client, ["c01"])
+    assert again["captures"][0]["fields"]["damage_type"]["value"] == "none"
+
+
+def test_bad_edits_are_rejected(client):
+    post_capture(client, "c01")
+    finalize(client, ["c01"])
+    url = "/jobs/J1/captures/c01/fields/"
+    assert client.post(url + "damage_type", json={"value": "flood"}).status_code == 400
+    assert client.post(url + "size_cm", json={"value": {"width": -3}}).status_code == 400
+    assert client.post(url + "tech_id", json={"value": "x"}).status_code == 400
+    assert client.post("/jobs/J1/captures/c09/fields/serial", json={"value": "x"}).status_code == 404

@@ -31,7 +31,8 @@ def item(code, qty, basis, sources, conf, room=None, status=None, reason=None):
 def area(fields):
     size, conf = val(fields, "size_cm")
     if size and size.get("width") and size.get("height"):
-        return size["width"] * size["height"] / CM2_PER_SQFT, size["width"] / 30.48, "estimated", conf
+        basis = "measured" if fields["size_cm"].get("source") == "human" else "estimated"
+        return size["width"] * size["height"] / CM2_PER_SQFT, size["width"] / 30.48, basis, conf
     return DEFAULT_SQFT, 4.0, "default", None
 
 

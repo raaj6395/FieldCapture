@@ -220,6 +220,10 @@ def build_record(job, body):
             "upload_delay_s_max": round(max(delays), 1) if delays else None,
         },
     }
+    return validate(rec)
+
+
+def validate(rec):
     errors = sorted(VALIDATOR.iter_errors(rec), key=lambda e: list(e.path))
     if errors:
         raise HTTPException(500, "job record failed schema: " + "; ".join(f"{list(e.path)}: {e.message}" for e in errors[:5]))
@@ -242,3 +246,51 @@ async def get_job(job_id: str):
     if not p.exists():
         raise HTTPException(404, "not finalized")
     return json.loads(p.read_text())
+
+
+EDITABLE = {"make", "model", "serial", "mfg_date", "appliance", "room", "surface", "damage_type", "size_cm"}
+CHOICES = {"damage_type": set(extract.DAMAGE_TYPES), "appliance": nameplate.APPLIANCE_TYPES | {"other"}}
+
+
+def edited_value(name, v):
+    if v is None or (isinstance(v, str) and not v.strip()):
+        return None
+    if name == "size_cm":
+        try:
+            w, h = float(v["width"]), float(v["height"])
+        except (TypeError, KeyError, ValueError):
+            raise HTTPException(400, "size_cm needs width and height in cm")
+        if not (0 < w <= 5000 and 0 < h <= 5000):
+            raise HTTPException(400, "size_cm out of range")
+        return {"width": round(w), "height": round(h)}
+    if not isinstance(v, str):
+        raise HTTPException(400, f"{name} must be text")
+    v = v.strip()
+    if name in CHOICES and v not in CHOICES[name]:
+        raise HTTPException(400, f"{name} must be one of {sorted(CHOICES[name])}")
+    return v
+
+
+@app.post("/jobs/{job_id}/captures/{capture_id}/fields/{name}")
+async def edit_field(job_id: str, capture_id: str, name: str, body: dict):
+    d = STORE / "jobs" / safe(job_id)
+    rec_path, cap_path = d / "job_record.json", d / "captures" / f"{safe(capture_id)}.json"
+    if not rec_path.exists() or not cap_path.exists():
+        raise HTTPException(404, "job or capture not found")
+    if name not in EDITABLE:
+        raise HTTPException(400, f"{name} is not editable")
+    cap = json.loads(cap_path.read_text())
+    old = cap["fields"].get(name)
+    if old and old.get("source") == "human":
+        old = old.get("previous")
+    cap["fields"][name] = {"value": edited_value(name, body.get("value")), "confidence": 1.0, "source": "human",
+                           "edited_at": iso(now_ms()), "previous": old}
+    rec = json.loads(rec_path.read_text())
+    ids = [c["capture_id"] for c in rec["captures"]]
+    rec["captures"] = [cap if i == capture_id else json.loads((d / "captures" / f"{i}.json").read_text()) for i in ids]
+    rec["line_items"] = line_items(rec["captures"], rec["notes"], datetime.now(timezone.utc).year)
+    rec["summary"]["needs_review"] = sum(i["status"] == "needs_review" for i in rec["line_items"])
+    validate(rec)
+    write_json(cap_path, cap)
+    write_json(rec_path, rec)
+    return rec
