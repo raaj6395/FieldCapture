@@ -87,6 +87,20 @@ class CommandParserTest {
   )
 
   @Test
+  fun ourOwnRepliesNeverParseAsCommands() {
+    val replies = listOf(
+        "Didn't catch that.", "Glasses back.", "Glasses back. Still paused.", "Glasses battery low.", "Glasses disconnected.",
+        "Glasses off. Paused.", "Job already running.", "Job restored.", "Job started.", "No job.", "Nothing to retake.", "Paused.",
+        "Photo failed. Say retake.", "Put the glasses on to continue.", "Ready.", "Resumed.", "Say a capture command first.",
+        "Blurry. Hold still.", "Cut off. Step back.", "Glare. Tilt a little.", "Nothing in view.", "Too dark. Turn on your light.",
+        "Nameplate.", "Damage, kitchen, north wall.", "Damage, living room, ceiling fan.", "Noted: subfloor soft by the cabinet.",
+        "Job ended. 3 photos, 1 note.", "Glasses are off. Turn them on first.", "Glasses are folded. Open them first.", "Put the glasses on first.",
+    )
+    val parsed = replies.mapNotNull { r -> CommandParser.parse(r)?.let { "\"$r\" -> $it" } }
+    assertEquals(parsed.joinToString("\n"), 0, parsed.size)
+  }
+
+  @Test
   fun phrases() {
     val wrong = cases.mapNotNull { (text, want) ->
       val got = CommandParser.parse(text)

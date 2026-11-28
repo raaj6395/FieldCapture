@@ -524,10 +524,9 @@ class JobSession(private val app: Application) {
 
   private fun onTranscript(r: TranscriptionResult) {
     if (!r.isFinal) return
-    if (tts.busy()) return log("ignored while speaking: \"${r.text}\"")
     if (tts.echo(r.text)) return log("ignored echo of our reply: \"${r.text}\"")
     val cmd = CommandParser.parse(r.text) ?: return log("chatter: \"${r.text}\"")
-    log("voice: \"${r.text}\" conf=${r.confidence} -> $cmd")
+    log("voice: \"${r.text}\" conf=${r.confidence} -> $cmd${if (tts.busy()) " (heard during our reply)" else ""}")
     caption.value = Caption(r.text, tech = true)
     handle(cmd, r.text, r.confidence)
   }
@@ -716,7 +715,11 @@ class JobSession(private val app: Application) {
   fun inject(text: String) {
     val g = glasses ?: return log("no mock glasses")
     log(">> inject \"$text\" (mock listening=${g.services.speech.isListening}, live=${g.services.speech.liveSourceDiagnostic.value})")
-    g.services.speech.simulateTranscription(text, true, 0.9f)
+    scope.launch {
+      g.services.speech.simulateTranscription(text, false, 0.5f)
+      delay(150)
+      g.services.speech.simulateTranscription(text, true, 0.9f)
+    }
   }
 
   private fun jobsRoot() = UploadWorker.jobsRoot(app)
@@ -823,7 +826,7 @@ class JobSession(private val app: Application) {
     fun busy() = SystemClock.elapsedRealtime() < mutedUntil
 
     fun echo(heard: String) =
-        SystemClock.elapsedRealtime() - lastAt < ECHO_WINDOW_MS && CommandParser.normalize(heard).let { it.isNotEmpty() && lastText.contains(it) }
+        SystemClock.elapsedRealtime() - lastAt < ECHO_WINDOW_MS && CommandParser.normalize(heard).let { it.isNotEmpty() && (lastText.contains(it) || lastText.replace("noted ", "note ").contains(it)) }
   }
 
   companion object {
