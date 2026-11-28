@@ -130,3 +130,10 @@ def test_fixture_damage_goes_to_review_and_insulation_gets_its_own_item():
     assert codes(fan) == ["INSP-REV"]
     ins = line_items([cap("c1", damage_type=("water_damage", 0.9), surface=("insulation", 0.9))], [], 2026)
     assert codes(ins) == ["DRY-EQ", "INS-RR"]
+
+
+def test_peeling_paint_is_paint_only():
+    wall = line_items([cap("c1", damage_type=("peeling_paint", 0.9), surface=("wall", 0.9), size_cm=({"width": 120, "height": 90}, 0.6))], [], 2026)
+    assert codes(wall) == ["PNT-WALL"]
+    ceiling = line_items([cap("c1", damage_type=("peeling_paint", 0.9), surface=("ceiling", 0.9), size_cm=({"width": 120, "height": 90}, 0.6))], [], 2026)
+    assert codes(ceiling) == ["PNT-CLG"]

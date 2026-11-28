@@ -7,7 +7,13 @@ BRANDS = [
     "Electrolux", "Frigidaire", "GE", "Goodman", "Grundfos", "Haier", "Heil", "Honeywell", "Kenmore", "KitchenAid", "Lennox",
     "LG", "Liebherr", "Maytag", "Miele", "Mitsubishi", "Navien", "Panasonic", "Rheem", "Rinnai", "Ruud", "Samsung", "Siemens",
     "Sharp", "Sony", "State", "Toshiba", "Trane", "Whirlpool", "York", "Canon", "Philips", "Hitachi", "Fujitsu", "Bryant",
+    "Tappan", "Coleman", "Payne", "Tempstar", "Comfortmaker", "Nordyne", "Intertherm", "Armstrong", "Ducane", "AirEase",
+    "Weil-McLain", "Burnham", "Lochinvar", "Weather King", "Hotpoint", "Speed Queen", "Sub-Zero", "Viking", "Thermador",
+    "JennAir", "InSinkErator", "Kohler", "Moen", "Midea", "Gree", "Hisense", "Beko", "Smeg", "Vaillant", "Viessmann",
+    "Prestige", "Pigeon", "Morphy Richards", "Livpure", "Kent", "Faber", "Vantro", "Bajaj", "Havells", "Voltas", "Godrej",
+    "IFB", "Blue Star", "Crompton", "Usha", "V-Guard", "Racold", "Butterfly", "Elica", "Hindware", "Lloyd", "Onida",
 ]
+NOT_BRANDS = {"SHARE", "VOLTS", "LABEL", "LABER"}
 SOURCE = "ocr:mlkit"
 TODAY = date.today()
 
@@ -72,7 +78,7 @@ def find_make(lines):
         for w in re.findall(r"[A-Za-z][A-Za-z.&-]+", line["text"]):
             for b in BRANDS:
                 nb, nw = norm(b), norm(w)
-                if nw == nb or (len(nb) >= 5 and edit1(nw, nb)):
+                if nw == nb or (len(nb) >= 5 and nw not in NOT_BRANDS and edit1(nw, nb)):
                     return b, line, 0.6 if len(nb) <= 3 else 1.0 if nw == nb else 0.8
     big = [l for l in lines if len(l.get("box", [])) == 4 and re.fullmatch(r"[A-Za-z][A-Za-z .&-]{2,30}", l["text"].strip())]
     if big:
@@ -166,10 +172,12 @@ def date_ok(v):
 
 
 def make_ok(v):
-    return 1.0 if any(norm(b) == norm(v) or (len(norm(b)) >= 5 and norm(b) in norm(v)) for b in BRANDS) else 0.8
+    first = norm((v or "").split()[0]) if (v or "").split() else ""
+    return 1.0 if any(norm(b) in (norm(v), first) or (len(norm(b)) >= 5 and norm(b) in norm(v)) for b in BRANDS) else 0.8
 
 
-VALIDATE = {"make": make_ok, "model": code_ok, "serial": serial_ok, "mfg_date": date_ok, "appliance": lambda v: 0.8}
+APPLIANCE_TYPES = {"water_heater", "washing_machine", "dryer", "hvac_compressor", "furnace", "refrigerator", "dishwasher"}
+VALIDATE = {"make": make_ok, "model": code_ok, "serial": serial_ok, "mfg_date": date_ok, "appliance": lambda v: 1.0 if v in APPLIANCE_TYPES else 0.8}
 FIELDS = ["make", "model", "serial", "mfg_date", "appliance"]
 AGREE, SOLO, CONFLICT = "agree", "solo", "conflict"
 WEIGHT = {AGREE: 1.0, SOLO: 0.7, CONFLICT: 0.4}
@@ -178,7 +186,8 @@ WEIGHT = {AGREE: 1.0, SOLO: 0.7, CONFLICT: 0.4}
 def same(f, a, b):
     na, nb = norm(a), norm(b)
     if f == "make":
-        return len(na) >= 3 and len(nb) >= 3 and (na in nb or nb in na)
+        short, long_ = sorted((na, nb), key=len)
+        return len(short) >= 2 and (long_.startswith(short) or (len(short) >= 3 and short in long_))
     if f == "mfg_date":
         return parse_date(a)[0] == parse_date(b)[0]
     return na == nb
@@ -204,6 +213,8 @@ def combine(ml, gm):
     out = {}
     for f in FIELDS:
         a, b = ml.get(f, {"value": None, "confidence": 0.0}), gm.get(f, {"value": None, "confidence": 0.0})
+        if f == "make" and a.get("signals", {}).get("validation", 1.0) < 0.5 and not (b["value"] and same(f, a["value"], b["value"])):
+            a = {"value": None, "confidence": 0.0}
         if a["value"] is None and b["value"] is None:
             out[f] = dict(b, signals=dict(b.get("signals", {}), agreement=0.0))
             continue
@@ -212,7 +223,7 @@ def combine(ml, gm):
             conf = 1 - (1 - a["confidence"]) * (1 - b["confidence"])
         elif a["value"] is None or b["value"] is None:
             how, pick = SOLO, a if b["value"] is None else b
-            conf = pick["confidence"] * WEIGHT[SOLO]
+            conf = pick["confidence"] * (1.0 if f == "appliance" and pick is b else WEIGHT[SOLO])
         else:
             how = CONFLICT
             pick = a if a["confidence"] > b["confidence"] else b

@@ -109,3 +109,27 @@ def test_vlm_failure_keeps_ocr_fields(tmp_path, monkeypatch):
     assert c.post("/captures", data={"meta": json.dumps(meta)}, files={"photo": ("c01.jpg", b"\xff\xd8x", "image/jpeg")}).status_code == 201
     rec = json.loads((tmp_path / "jobs/J4/captures/c01.json").read_text())
     assert rec["fields"]["serial"]["value"] == "12345678" and rec["fields"]["serial"]["source"] == "ocr:mlkit"
+
+
+def test_ocr_brand_guess_does_not_drag_down_a_correct_vlm_make():
+    ml = nameplate.extract(ocr("ELEMENT WATTS UPPER 4500", "CONSUMER PRODUCTS DIV"), {"flag": "ok"})
+    out = nameplate.combine(ml, nameplate.from_gemini(vlm(make=("A.O. SMITH CORPORATION", 1.0)), {"flag": "ok"}))
+    assert out["make"]["value"] == "A.O. SMITH CORPORATION" and out["make"]["source"].endswith(":solo") and out["make"]["confidence"] >= 0.7
+
+
+def test_short_brand_agrees_with_its_long_form():
+    ml = nameplate.extract(ocr("GE APPLIANCES", "Model No. GTS18HYNFRFS"), {"flag": "ok"})
+    out = nameplate.combine(ml, nameplate.from_gemini(vlm(make=("GE APPLIANCES", 1.0)), {"flag": "ok"}))
+    assert out["make"]["source"].endswith(":agree") and out["make"]["confidence"] >= 0.9
+    assert nameplate.make_ok("GE APPLIANCES") == 1.0 and nameplate.make_ok("Generic Heat Co") == 0.8
+
+
+def test_appliance_seen_only_by_vlm_keeps_its_confidence():
+    out = nameplate.combine(nameplate.extract(ocr("GE"), {"flag": "ok"}), nameplate.from_gemini(vlm(appliance=("refrigerator", 1.0)), {"flag": "ok"}))
+    assert out["appliance"]["value"] == "refrigerator" and out["appliance"]["confidence"] == 1.0
+
+
+def test_nameplate_words_one_letter_off_a_brand_are_not_brands():
+    assert nameplate.find_make(ocr("NOMINAL VOLTS 208/230")["lines"])[0] != "Voltas"
+    assert nameplate.find_make(ocr("SHARE YOUR FEEDBACK")["lines"])[0] != "Sharp"
+    assert nameplate.find_make(ocr("SAIMSUNG")["lines"])[0] == "Samsung"

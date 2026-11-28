@@ -6,7 +6,8 @@ Return:
   water_stain = discoloured but intact surface. water_damage = material is wet, sagging, collapsed, delaminated or rotted. mold = dark/green/grey fungal spots or patches.
   Use none if no damage is visible.
 - size: width and height of the affected area in centimetres. Only estimate from a reference object of known size that is visible
-  (ceiling tile 61 cm, outlet cover 7x11 cm, door 80x200 cm, floor tile, brick, standard window). Name the reference you used, or "none".
+  (ceiling tile 61 cm, outlet cover 7x11 cm, door 80x200 cm, wall studs 40.6 cm apart centre to centre, floor tile, brick, standard window).
+  When studs show through a hole, count the stud bays it spans. Name the reference you used, or "none".
   If there is no reference, still give your best estimate but say "none".
 - confidence for each: your probability (0 to 1) that the answer is right. Size from a single photo is rough; be modest.
 - evidence: one short sentence on what in the image you based damage_type on.

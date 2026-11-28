@@ -53,6 +53,8 @@ def damage(c, today_year):
     if s not in WALLS | FLOORS | CABINETS | {"ceiling", "insulation"}:
         return [item("INSP-REV", 1, "default", ids, conf, room, "needs_review", f"{dtype} on {s}: no catalog item, price by hand")]
     out = []
+    if dtype == "peeling_paint" and s in WALLS | {"ceiling"}:
+        return [item("PNT-CLG" if s == "ceiling" else "PNT-WALL", sqft, basis, ids, conf, room, status)]
     if s == "ceiling":
         if dtype == "mold":
             out += [item("MOLD-TRT", sqft, basis, ids, conf, room, status), item("CLG-RR", sqft, basis, ids, conf, room, status)]
