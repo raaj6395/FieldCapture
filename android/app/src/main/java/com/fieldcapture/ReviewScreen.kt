@@ -38,6 +38,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import java.io.File
 import java.net.HttpURLConnection
 import java.net.URL
@@ -94,10 +105,10 @@ private fun localRecord(ctx: Context, id: String): JSONObject {
   return JSONObject().put("job_id", id).put("captures", JSONArray(caps)).put("notes", JSONArray(notes)).put("line_items", JSONArray())
 }
 
-private fun thumbnail(ctx: Context, jobId: String, captureId: String): Bitmap? {
+private fun thumbnail(ctx: Context, jobId: String, captureId: String, sample: Int = 4): Bitmap? {
   val f = File(UploadWorker.jobsRoot(ctx), jobId).listFiles().orEmpty().firstOrNull { it.name.startsWith("$captureId.") && it.extension in setOf("jpg", "heic") }
       ?: return null
-  val bmp = BitmapFactory.decodeFile(f.path, BitmapFactory.Options().apply { inSampleSize = 4 }) ?: return null
+  val bmp = BitmapFactory.decodeFile(f.path, BitmapFactory.Options().apply { inSampleSize = sample }) ?: return null
   val deg = when (ExifInterface(f.path).getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)) {
     ExifInterface.ORIENTATION_ROTATE_90 -> 90f
     ExifInterface.ORIENTATION_ROTATE_180 -> 180f
@@ -188,6 +199,7 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
   val ctx = LocalContext.current
   var rec by remember { mutableStateOf<JSONObject?>(null) }
   var remote by remember { mutableStateOf(true) }
+  var open by remember { mutableStateOf<JSONObject?>(null) }
   LaunchedEffect(jobId) {
     val r = withContext(Dispatchers.IO) { runCatching { fetchRecord(jobId) }.getOrNull() }
     remote = r != null
@@ -233,13 +245,11 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
     items(caps) { c ->
       val id = c.getString("capture_id")
       val bmp by produceState<Bitmap?>(null, id) { value = withContext(Dispatchers.IO) { thumbnail(ctx, jobId, id) } }
-      val q = c.optJSONObject("quality")
-      val failed = q?.optJSONArray("failed_checks")?.let { a -> (0 until a.length()).map(a::getString) }.orEmpty()
       Box(Modifier.padding(bottom = 12.dp)) {
         Card {
           Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-              Box(Modifier.size(72.dp).clip(Fc.rSmall).background(Fc.raised)) {
+              Box(Modifier.size(72.dp).clip(Fc.rSmall).background(Fc.raised).clickable(onClickLabel = "Open photo") { open = c }) {
                 bmp?.let { Image(it.asImageBitmap(), contentDescription = "Photo $id", contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize()) }
               }
               Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -247,12 +257,7 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
                   Text(human(c.getString("type")), style = Fc.heading, modifier = Modifier.weight(1f))
                   Text(id, style = Fc.meta)
                 }
-                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                  val low = q?.optString("flag") == "low"
-                  FcIcon(if (low) Lucide.alert else Lucide.check, if (low) Fc.amber else Fc.muted, 14.dp)
-                  Text(if (low) "Low quality: ${failed.joinToString { human(it).lowercase() }}" else "Photo quality ok",
-                      style = Fc.label.copy(color = if (low) Fc.amber else Fc.text2))
-                }
+                QualityLine(c)
               }
             }
             Hairline()
@@ -280,6 +285,55 @@ fun ReviewScreen(jobId: String, onBack: () -> Unit) {
             Estimate(lines, n.getString("note_id"))
           }
         }
+      }
+    }
+  }
+  open?.let { c -> PhotoViewer(jobId, c, rec?.optJSONArray("line_items")?.objs().orEmpty()) { open = null } }
+}
+
+@Composable
+private fun QualityLine(c: JSONObject) {
+  val q = c.optJSONObject("quality")
+  val failed = q?.optJSONArray("failed_checks")?.let { a -> (0 until a.length()).map(a::getString) }.orEmpty()
+  val low = q?.optString("flag") == "low"
+  Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+    FcIcon(if (low) Lucide.alert else Lucide.check, if (low) Fc.amber else Fc.muted, 14.dp)
+    Text(if (low) "Low quality: ${failed.joinToString { human(it).lowercase() }}" else "Photo quality ok",
+        style = Fc.label.copy(color = if (low) Fc.amber else Fc.text2))
+  }
+}
+
+@Composable
+private fun PhotoViewer(jobId: String, c: JSONObject, lines: List<JSONObject>, onClose: () -> Unit) {
+  val ctx = LocalContext.current
+  val id = c.getString("capture_id")
+  val bmp by produceState<Bitmap?>(null, id) { value = withContext(Dispatchers.IO) { thumbnail(ctx, jobId, id, 1) } }
+  var scale by remember(id) { mutableFloatStateOf(1f) }
+  var pan by remember(id) { mutableStateOf(Offset.Zero) }
+  Dialog(onClose, DialogProperties(usePlatformDefaultWidth = false)) {
+    Column(Modifier.fillMaxSize().background(Fc.bg).safeDrawingPadding()) {
+      Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.size(48.dp).clip(Fc.rControl).clickable(onClickLabel = "Close photo", onClick = onClose), contentAlignment = Alignment.Center) { FcIcon(Lucide.back, Fc.text, 22.dp) }
+        Spacer(Modifier.width(4.dp))
+        Text(human(c.getString("type")), style = Fc.heading, modifier = Modifier.weight(1f))
+        Text(id, style = Fc.meta)
+      }
+      Box(Modifier.fillMaxWidth().weight(1.2f).clipToBounds().background(Color.Black).pointerInput(id) {
+        detectTransformGestures { _, move, zoom, _ ->
+          scale = (scale * zoom).coerceIn(1f, 5f)
+          pan = if (scale == 1f) Offset.Zero else pan + move
+        }
+      }) {
+        bmp?.let {
+          Image(it.asImageBitmap(), contentDescription = "Photo $id", contentScale = ContentScale.Fit,
+              modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = scale, scaleY = scale, translationX = pan.x, translationY = pan.y))
+        }
+      }
+      Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        QualityLine(c)
+        Hairline()
+        Fields(c.optJSONObject("fields"))
+        Estimate(lines, id)
       }
     }
   }
