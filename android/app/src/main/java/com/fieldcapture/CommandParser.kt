@@ -56,12 +56,69 @@ object CommandParser {
   fun parse(raw: String): Command? {
     val s = normalize(raw)
     if (s.isEmpty()) return null
-    for ((re, build) in TABLE) re.matchEntire(s)?.let { return build(it) }
+    strict(s)?.let { return it }
+    fuzzy(s)?.let { return it }
     return if (s.substringBefore(' ') in KEYWORDS) Command.Unknown(s) else null
   }
 
+  private fun strict(s: String): Command? {
+    for ((re, build) in TABLE) re.matchEntire(s)?.let { return build(it) }
+    return null
+  }
+
+  private val LEAD = setOf("uh", "um", "umm", "ok", "okay", "so", "hey", "now", "please", "alright", "right")
+  private val ECHOES = setOf("noted", "paused", "resumed")
+  private val PLACE_WORDS = (ROOMS + SURFACES).flatMap { it.split(' ') }.toSet()
+
+  private fun fuzzy(s: String): Command? {
+    val t = s.split(' ').dropWhile { it in LEAD }.dropLastWhile { it == "please" }
+    if (t.isEmpty() || t[0] in ECHOES) return null
+    strict(t.joinToString(" "))?.let { return it }
+    val head = t[0]
+    val rest = t.drop(1)
+    if (rest.isEmpty()) {
+      return when {
+        near(head, "pause", 1) -> Command.Pause
+        near(head, "resume", 1) -> Command.Resume
+        near(head, "retake", 1) -> Command.Retake
+        else -> null
+      }
+    }
+    if (rest == listOf("nameplate")) return Command.CaptureNameplate
+    if (near(head, "capture", 2) || head in CAPTURE_SOUNDS) {
+      if (rest.size <= 2 && (rest.joinToString("").let { lev(it, "nameplate") <= 4 } || rest[0].startsWith("nam"))) return Command.CaptureNameplate
+      if (near(rest[0], "damage", 3)) return damage(rest.drop(1).joinToString(" "))
+    }
+    if (rest.firstOrNull() == "damage" && lev(head, "capture") <= 3) return damage(rest.drop(1).joinToString(" "))
+    if ((near(head, "note", 1) || head in setOf("no", "know")) && rest.size >= 3 && rest[0] !in KEYWORDS) return Command.Note(rest.joinToString(" "))
+    if (head in setOf("end", "and", "stop", "finish", "start", "begin") && rest.size == 1 && near(rest[0], "job", 1)) {
+      return if (head == "start" || head == "begin") Command.Start else Command.Stop
+    }
+    return null
+  }
+
+  private val CAPTURE_SOUNDS = setOf("captain", "capital", "captor", "rapture", "kept", "capsule", "picture")
+
+  private fun places(words: List<String>): String = words.filter { it.isNotEmpty() }.joinToString(" ") { w ->
+    if (w in PLACE_WORDS || w.length < 4) w
+    else PLACE_WORDS.filter { near(w, it, if (it.length <= 5) 1 else 2) }.minByOrNull { lev(w, it) } ?: w
+  }
+
+  private fun near(a: String, b: String, max: Int) = a.length >= 3 && lev(a, b) <= max
+
+  fun lev(a: String, b: String): Int {
+    var prev = IntArray(b.length + 1) { it }
+    for (i in 1..a.length) {
+      val cur = IntArray(b.length + 1)
+      cur[0] = i
+      for (j in 1..b.length) cur[j] = minOf(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + if (a[i - 1] == b[j - 1]) 0 else 1)
+      prev = cur
+    }
+    return prev[b.length]
+  }
+
   private fun damage(args: String): Command.CaptureDamage {
-    var rest = " $args "
+    var rest = " ${places(args.split(' '))} "
     fun take(list: List<String>): String? =
         list.firstOrNull { rest.contains(" $it ") }?.also { rest = rest.replaceFirst(" $it ", " ") }
     val room = take(ROOMS)
